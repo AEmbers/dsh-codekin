@@ -189,6 +189,98 @@ export declare const CONTENT_PACK_SCHEMA: {
                         readonly type: "string";
                         readonly pattern: "^[A-Za-z0-9@][A-Za-z0-9._:@/-]{1,127}$";
                     };
+                    readonly companion: {
+                        readonly type: "object";
+                        readonly additionalProperties: false;
+                        readonly required: readonly ["greeting", "lines", "stories"];
+                        readonly properties: {
+                            readonly greeting: {
+                                readonly type: "object";
+                                readonly additionalProperties: false;
+                                readonly required: readonly ["zhCN", "en"];
+                                readonly properties: {
+                                    readonly zhCN: {
+                                        readonly type: "string";
+                                        readonly minLength: 1;
+                                        readonly maxLength: 160;
+                                    };
+                                    readonly en: {
+                                        readonly type: "string";
+                                        readonly minLength: 1;
+                                        readonly maxLength: 160;
+                                    };
+                                };
+                            };
+                            readonly lines: {
+                                readonly type: "array";
+                                readonly minItems: 1;
+                                readonly maxItems: 8;
+                                readonly items: {
+                                    readonly type: "object";
+                                    readonly additionalProperties: false;
+                                    readonly required: readonly ["zhCN", "en"];
+                                    readonly properties: {
+                                        readonly zhCN: {
+                                            readonly type: "string";
+                                            readonly minLength: 1;
+                                            readonly maxLength: 160;
+                                        };
+                                        readonly en: {
+                                            readonly type: "string";
+                                            readonly minLength: 1;
+                                            readonly maxLength: 160;
+                                        };
+                                    };
+                                };
+                            };
+                            readonly stories: {
+                                readonly type: "array";
+                                readonly minItems: 3;
+                                readonly maxItems: 3;
+                                readonly items: {
+                                    readonly type: "object";
+                                    readonly additionalProperties: false;
+                                    readonly required: readonly ["title", "body"];
+                                    readonly properties: {
+                                        readonly title: {
+                                            readonly type: "object";
+                                            readonly additionalProperties: false;
+                                            readonly required: readonly ["zhCN", "en"];
+                                            readonly properties: {
+                                                readonly zhCN: {
+                                                    readonly type: "string";
+                                                    readonly minLength: 1;
+                                                    readonly maxLength: 160;
+                                                };
+                                                readonly en: {
+                                                    readonly type: "string";
+                                                    readonly minLength: 1;
+                                                    readonly maxLength: 160;
+                                                };
+                                            };
+                                        };
+                                        readonly body: {
+                                            readonly type: "object";
+                                            readonly additionalProperties: false;
+                                            readonly required: readonly ["zhCN", "en"];
+                                            readonly properties: {
+                                                readonly zhCN: {
+                                                    readonly type: "string";
+                                                    readonly minLength: 1;
+                                                    readonly maxLength: 2400;
+                                                };
+                                                readonly en: {
+                                                    readonly type: "string";
+                                                    readonly minLength: 1;
+                                                    readonly maxLength: 2400;
+                                                };
+                                            };
+                                        };
+                                    };
+                                };
+                            };
+                        };
+                    };
                     readonly stats: {
                         readonly type: "object";
                         readonly additionalProperties: false;

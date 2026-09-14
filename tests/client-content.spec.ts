@@ -57,6 +57,23 @@ describe('React content view', () => {
     expect(Object.isFrozen(parsed.creatures)).toBe(true)
   })
 
+  it('loads authored companion stories from the content pack and rejects incomplete or oversized profiles', () => {
+    activateCodekinContent(CORE_CONTENT_VIEW)
+    const jelly = creatureCatalog().find(row => row.id === 'relay-mesh-jelly')!
+    expect(jelly.companion?.stories.map(row => row.title.zhCN)).toEqual(['第一颗留给你的星', '没有寄出的晚安', '归航的坐标'])
+    expect(jelly.companion?.lines.length).toBeGreaterThan(1)
+    for (const edit of [
+      (profile: Record<string, unknown>) => { profile.lines = [] },
+      (profile: Record<string, unknown>) => { profile.stories = [] },
+      (profile: Record<string, unknown>) => { profile.greeting = { zhCN: '你好' } },
+      (profile: Record<string, unknown>) => { profile.stories = Array.from({ length: 3 }, () => ({ title: { zhCN: '故事', en: 'Story' }, body: { zhCN: '文'.repeat(2401), en: 'Body' } })) },
+    ]) {
+      const view = structuredClone(CORE_CONTENT_VIEW)
+      edit(view.creatures.find(row => row.id === 'relay-mesh-jelly')!.companion as unknown as Record<string, unknown>)
+      expect(() => parseCodekinContentView(view)).toThrow('invalid content view')
+    }
+  })
+
   it('rejects unsupported, extended, unsafe, or dangling content views', () => {
     expect(() => parseCodekinContentView({ ...CORE_CONTENT_VIEW, contentApi: 2 }))
       .toThrow('unsupported content API')

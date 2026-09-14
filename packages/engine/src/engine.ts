@@ -1,3 +1,4 @@
+import { companionBond, companionInteractionReady, companionStoryUnlocked, selectedCompanion, COMPANION_BOND_LIMIT, COMPANION_INTERACTION_POINTS } from './companion.ts'
 import {
   CAPTURE_CORE_QUALITIES,
   TRACE_ECOLOGIES,
@@ -2319,6 +2320,26 @@ export function applyTraceWildAction(
     return { state: commit(next, now) }
   }
   if (!current.enabled) throw new TraceWildRuleError('conflict')
+  if (action.type === 'set-companion' || action.type === 'interact-companion' || action.type === 'read-companion-story') {
+    if (!current.creatures.some(row => row.instanceId === action.creatureInstanceId)) throw new TraceWildRuleError('invalid-action')
+    const bond = companionBond(current, action.creatureInstanceId)
+    if (action.type === 'read-companion-story' && !companionStoryUnlocked(bond.points, action.chapter)) throw new TraceWildRuleError('invalid-action')
+    if (action.type !== 'set-companion' && selectedCompanion(current)?.instanceId !== action.creatureInstanceId) throw new TraceWildRuleError('conflict')
+    if (action.type === 'interact-companion' && !companionInteractionReady(bond, now)
+      || action.type === 'read-companion-story' && bond.readStories.includes(action.chapter)
+      || action.type === 'set-companion' && current.lounge?.selectedInstanceId === action.creatureInstanceId) return { state: current }
+    // Lounge actions are isolated from encounter settlement and the combat random stream.
+    const next = structuredClone(current)
+    next.lounge ??= { bonds: {} }
+    next.lounge.selectedInstanceId = action.creatureInstanceId
+    if (action.type === 'interact-companion') next.lounge.bonds[action.creatureInstanceId] = {
+      ...structuredClone(bond), points: Math.min(COMPANION_BOND_LIMIT, bond.points + COMPANION_INTERACTION_POINTS), lastInteractionAt: now,
+    }
+    if (action.type === 'read-companion-story') next.lounge.bonds[action.creatureInstanceId] = {
+      ...bond, readStories: [...bond.readStories, action.chapter],
+    }
+    return { state: commit(next, now) }
+  }
   if (action.type === 'set-creature-appearance') {
     if (current.battle !== undefined) throw new TraceWildRuleError('conflict')
     const creature = current.creatures.find(row => row.instanceId === action.creatureInstanceId)
@@ -2483,6 +2504,10 @@ export function applyTraceWildAction(
         throw new TraceWildRuleError('invalid-action')
       }
       next.creatures.splice(creatureIndex, 1)
+      if (next.lounge !== undefined) {
+        delete next.lounge.bonds[released.instanceId]
+        if (next.lounge.selectedInstanceId === released.instanceId) delete next.lounge.selectedInstanceId
+      }
       next.squad = next.squad.filter(id => id !== released.instanceId)
       if (next.squad.length === 0) next.squad = [next.creatures[0]!.instanceId]
       next.materials[released.quality] += 1

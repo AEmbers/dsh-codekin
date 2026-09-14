@@ -9,6 +9,7 @@ import {
   captureChance,
 } from '../../../engine/src/balance.ts'
 import { MATCH_BOARD_SIZE, areAdjacentTiles } from '../../../engine/src/match3.ts'
+import { selectedCompanion } from '../../../engine/src/companion.ts'
 import type {
   BattleAmplifier,
   CaptureCoreQuality,
@@ -42,9 +43,13 @@ import {
 import type { TraceWildLocaleKey } from '../locales.ts'
 import { BATTLE_MOTION, cascadeFallTime, tileFallTime } from '../battle-motion.ts'
 import { CodekinMapView } from './CodekinMapView.tsx'
+import { CompanionLounge } from './CompanionLounge.tsx'
+import { PanelDialog, PanelDialogScope, PageControls, usePagination } from './PanelDialog.tsx'
 import { BattleStage } from './BattleStage.tsx'
 import { CodekinDetailModal, CodekinView } from './CodekinRosterView.tsx'
 import type { CreatureLook } from '../appearance-presentation.ts'
+import { resolveCreatureSprite } from '../appearance-presentation.ts'
+import { usePortraitPreload } from './use-portrait-preload.ts'
 import {
   CORE_KEYS,
   CreatureSprite,
@@ -56,7 +61,8 @@ import { boardNeighbour, projectRelease, readUiPreferences, saveUiPreferences } 
 import { useParticleField, useReducedMotion, useSpringAnimation } from './use-motion.ts'
 import css from './tracewild.module.css'
 
-type Tab = 'map' | 'tower' | 'squad' | 'dex' | 'inventory'
+const TABS = ['lounge', 'map', 'tower', 'squad', 'dex', 'inventory'] as const
+type Tab = typeof TABS[number]
 
 interface WindowPosition {
   x: number
@@ -88,6 +94,7 @@ function sampleDrag(drag: WindowDragState, event: ReactPointerEvent<HTMLElement>
 }
 
 const TAB_ICONS: Readonly<Record<Tab, string>> = {
+  lounge: '♡',
   map: '◌',
   tower: '⌁',
   squad: '◇',
@@ -398,7 +405,7 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
   const [snapshot, setSnapshot] = useState<TraceWildSnapshot>()
   const [online, setOnline] = useState(true)
   const [open, setOpen] = useState(false)
-  const [tab, setTab] = useState<Tab>('map')
+  const [tab, setTab] = useState<Tab>('lounge')
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<string>()
   const [pulse, setPulse] = useState(false)
@@ -412,7 +419,7 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
   const [releaseCandidate, setReleaseCandidate] = useState<string>()
   const [battleTransition, setBattleTransition] = useState<BattleTransition>()
   const [motionPreference, setMotionPreference] = useState(() => readUiPreferences().reducedMotion)
-  const { reducedMotion, systemReducedMotion } = useReducedMotion(motionPreference)
+  const { reducedMotion } = useReducedMotion(motionPreference)
   const windowSpring = useSpringAnimation(reducedMotion)
   const launcherSpring = useSpringAnimation(reducedMotion)
   const effects = useParticleField(reducedMotion, css.motionParticle!)
@@ -434,6 +441,16 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
   const rewardVisible = rewardQueue[0] !== undefined && snapshot?.state.starterChosen === true
     && snapshot.state.battle === undefined && codekinDetail === undefined
     && releaseCandidate === undefined && pendingNavigation === undefined
+  const warmState = snapshot?.state
+  const warmPortraits = warmState === undefined ? [] : [
+    selectedCompanion(warmState),
+    ...warmState.squad.map(id => warmState.creatures.find(creature => creature.instanceId === id)),
+  ].flatMap(creature => {
+    if (creature === undefined) return []
+    const portrait = resolveCreatureSprite(creature.creatureId, creature)
+    return [portrait.source, ...(portrait.appearance === 'ultimate' ? [contentAssetUrl(`creature:${creature.creatureId}:ultimate-silhouette`)] : [])]
+  })
+  usePortraitPreload(warmPortraits, open && warmState?.enabled === true)
 
   const navigate = useCallback((target: Tab | 'close'): void => {
     setPendingNavigation(undefined)
@@ -798,19 +815,20 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
       setBattleTransition(undefined)
       const battleAction = action.type.startsWith('battle-') || action.type === 'capture'
         || action.type === 'flee' || action.type === 'start-battle' || action.type === 'start-tower'
+      const companionAction = action.type === 'set-companion' || action.type === 'interact-companion' || action.type === 'read-companion-story'
       if (error instanceof TraceWildConnectionError && error.code === 'invalid-action') {
         // A legal adjacent swap that forms no match is ordinary board input:
         // the pieces spring back and the action is not consumed. Do not make
         // that feel like a stale Host/plugin error.
         if (action.type !== 'battle-swap') {
-          setNotice(action.type === 'set-creature-appearance' ? t('appearanceFailed') : action.type === 'claim-idle-reward'
+          setNotice(companionAction ? t('companionActionFailed') : action.type === 'set-creature-appearance' ? t('appearanceFailed') : action.type === 'claim-idle-reward'
             ? t('rewardUnavailable')
             : battleAction
               ? t('battleActionUnavailable')
               : t('invalidSwap'))
         }
       } else {
-        setNotice(action.type === 'set-creature-appearance' ? t('appearanceFailed') : error instanceof TraceWildConnectionError && error.code === 'conflict'
+        setNotice(companionAction ? t('companionActionFailed') : action.type === 'set-creature-appearance' ? t('appearanceFailed') : error instanceof TraceWildConnectionError && error.code === 'conflict'
           ? battleAction
             ? t('battleActionUnavailable')
             : t('invalidSwap')
@@ -900,12 +918,13 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
         style={{ '--window-x': `${windowPosition.x}px`, '--window-y': `${windowPosition.y}px` } as CSSProperties}
         aria-label={t('title')}
       >
+        <PanelDialogScope>
         <div ref={inertBackground} className={css.windowTools}>
         {pendingIdleReward !== undefined && (
           <IdleRewardButton reward={pendingIdleReward} t={t} zh={zh} busy={busy} claim={claimIdleReward} />
         )}
         <button type="button" className={css.motionToggle} aria-pressed={reducedMotion}
-          title={t(systemReducedMotion && motionPreference === undefined ? 'systemMotion' : 'reduceMotion')} aria-label={t('reduceMotion')}
+          title={t('reduceMotion')} aria-label={t('reduceMotion')}
           onClick={() => { setMotionPreference(!reducedMotion); saveUiPreferences({ reducedMotion: !reducedMotion }) }}>
           <span aria-hidden="true">{reducedMotion ? '◉' : '≈'}</span>
         </button>
@@ -960,7 +979,7 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
                 <StarterSelection t={t} zh={zh} busy={busy} choose={creatureId => act({ type: 'choose-starter', creatureId })} />
               )}
               <nav ref={inertBackground} className={css.tabs} aria-label={t('title')}>
-                {(['map', 'tower', 'squad', 'dex', 'inventory'] as const).map((id, index) => (
+                {TABS.map((id, index) => (
                   <button
                     key={id}
                     type="button"
@@ -971,13 +990,13 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
                     className={tab === id ? css.tabActive : ''}
                     onClick={() => { requestNavigation(id) }}
                     onKeyDown={event => {
-                      const tabs = ['map', 'tower', 'squad', 'dex', 'inventory'] as const
-                      const next = event.key === 'ArrowRight' ? (index + 1) % 5
-                        : event.key === 'ArrowLeft' ? (index + 4) % 5 : event.key === 'Home' ? 0 : event.key === 'End' ? 4 : -1
+                      const next = event.key === 'ArrowRight' ? (index + 1) % TABS.length
+                        : event.key === 'ArrowLeft' ? (index + TABS.length - 1) % TABS.length
+                        : event.key === 'Home' ? 0 : event.key === 'End' ? TABS.length - 1 : -1
                       if (next < 0) return
                       event.preventDefault()
-                      requestNavigation(tabs[next]!)
-                      event.currentTarget.parentElement?.querySelector<HTMLButtonElement>(`[data-tab="${tabs[next]}"]`)?.focus()
+                      requestNavigation(TABS[next]!)
+                      event.currentTarget.parentElement?.querySelector<HTMLButtonElement>(`[data-tab="${TABS[next]}"]`)?.focus()
                     }}
                   >
                     <span aria-hidden="true">0{index + 1}<i>{TAB_ICONS[id]}</i></span>
@@ -987,6 +1006,8 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
               </nav>
               <main ref={inertBackground} key={tab} id="codekin-page" data-page={tab} className={css.content}>
                 {!online && <div className={css.connectionBanner} role="status"><span>{t('disconnected')}</span><button type="button" onClick={() => { void refresh() }}>{t('retry')}</button></div>}
+                {tab === 'lounge' && <CompanionLounge state={state} serverTime={snapshot?.serverTime ?? state.updatedAt}
+                  t={t} zh={zh} busy={busy || !online} reducedMotion={reducedMotion} act={act} />}
                 {tab === 'map' && (
                   <CodekinMapView
                     state={state}
@@ -1099,6 +1120,7 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
             </>
           )}
         <div ref={effects.layer} className={css.particleLayer} aria-hidden="true" />
+        </PanelDialogScope>
       </section>
   )
 }
@@ -1163,6 +1185,7 @@ function TowerView(props: {
   busy: boolean
   start: () => void
 }) {
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const towerState = props.state.tower ?? { highestClearedFloor: 0, attempts: 0, clears: 0 }
   const towerComplete = towerState.highestClearedFloor >= MAX_CONTENT_TOWER_FLOOR
   const tower = contentTowerFloorProfile(Math.min(MAX_CONTENT_TOWER_FLOOR, towerState.highestClearedFloor + 1))
@@ -1176,7 +1199,7 @@ function TowerView(props: {
         <div>
           <span>{props.t('towerKicker')}</span>
           <h2>{props.t('towerTitle')}</h2>
-          <p>{props.t('towerIntro')}</p>
+          <button type="button" className={css.detailButton} onClick={() => setDetailsOpen(true)}>{props.zh ? '路线与奖励 ↗' : 'Route & rewards ↗'}</button>
         </div>
         <strong>{String(tower.floor).padStart(3, '0')}</strong>
       </header>
@@ -1218,6 +1241,8 @@ function TowerView(props: {
         <article><span>{props.t('towerClears')}</span><b>{towerState.clears}</b></article>
       </section>
 
+      {detailsOpen && <PanelDialog title={props.t('towerPath')} closeLabel={props.t('closeCodekinDetail')} onClose={() => setDetailsOpen(false)}>
+        <p>{props.t('towerIntro')}</p>
       <section className={css.towerRoute}>
         <header><span>{props.t('towerPath')}</span><small>TRACE / ASCENSION</small></header>
         <div>
@@ -1235,36 +1260,48 @@ function TowerView(props: {
           })}
         </div>
       </section>
+      </PanelDialog>}
     </div>
   )
 }
 
 function DexView(props: { state: TraceWildSnapshot['state']; t: TraceWildOverlayProps['t']; zh: boolean }) {
+  const [selected, setSelected] = useState<CreatureDefinition>()
+  const catalog = creatureCatalog()
+  const paging = usePagination(catalog, 9)
   const dex = new Map(props.state.dex.map(row => [row.creatureId, row]))
+  const nextPage = (paging.page + 1) % paging.pages
+  usePortraitPreload(catalog.slice(nextPage * 9, (nextPage + 1) * 9)
+    .filter(creature => dex.has(creature.id)).map(creature => resolveCreatureSprite(creature.id).source), true)
   return (
     <div className={css.panelPage}>
       <div className={css.pageHeading}>
         <div>
           <h2>{props.t('dex')}</h2>
-          <p>{props.t('dexSeen')} {props.state.dex.length}/25 · {props.t('dexCaught')} {props.state.dex.filter(row => row.captured > 0).length}/25</p>
+          <p>{props.t('dexSeen')} {props.state.dex.length}/{catalog.length} · {props.t('dexCaught')} {props.state.dex.filter(row => row.captured > 0).length}/{catalog.length}</p>
         </div>
       </div>
       <div className={css.dexGrid}>
-        {creatureCatalog().map((creature) => {
+        {paging.items.map((creature) => {
           const record = dex.get(creature.id)
           const seen = record !== undefined
           const caught = (record?.captured ?? 0) > 0
           return (
-            <div key={creature.id} className={`${css.dexCard} ${caught ? css.dexCaught : seen ? css.dexSeen : ''}`}>
+            <button type="button" disabled={!seen} aria-haspopup="dialog" onClick={() => setSelected(creature)} key={creature.id} className={`${css.dexCard} ${caught ? css.dexCaught : seen ? css.dexSeen : ''}`}>
               <span className={css.dexNumber}>#{String(creature.number).padStart(2, '0')}</span>
-              <CreatureSprite creature={creature} size="small" unknown={!seen} />
+              <CreatureSprite creature={creature} size="small" unknown={!seen} priority="high" />
               <strong>{seen ? creatureName(creature, props.zh) : props.t('undiscovered')}</strong>
               <small>{seen ? props.t(ECOLOGY_KEYS[creature.ecology]) : '???'}</small>
-              {record !== undefined && <span>{props.t('dexSeen')} ×{record.seen} · {props.t('dexCaught')} ×{record.captured}</span>}
-            </div>
+            </button>
           )
         })}
       </div>
+      <PageControls {...paging} zh={props.zh} />
+      {selected !== undefined && <PanelDialog title={creatureName(selected, props.zh)} closeLabel={props.t('closeCodekinDetail')} onClose={() => setSelected(undefined)}>
+        <div className={css.dexDetail}><CreatureSprite creature={selected} size="large" /><p>{props.t(ECOLOGY_KEYS[selected.ecology])}</p>
+          <p>{props.t('dexSeen')} ×{dex.get(selected.id)?.seen ?? 0} · {props.t('dexCaught')} ×{dex.get(selected.id)?.captured ?? 0}</p>
+        </div>
+      </PanelDialog>}
     </div>
   )
 }
@@ -1274,6 +1311,9 @@ function InventoryView(props: {
   t: TraceWildOverlayProps['t']
   zh: boolean
 }) {
+  const [view, setView] = useState<'stats' | 'log'>()
+  const [item, setItem] = useState<{ name: string; description: string }>()
+  const paging = usePagination(props.state.log, 5)
   const stats = props.state.stats
   return (
     <div className={css.inventoryLayout}>
@@ -1281,42 +1321,42 @@ function InventoryView(props: {
         <h2>{props.t('coreInventory')}</h2>
         <div className={css.coreGrid}>
           {CAPTURE_CORE_QUALITIES.map(quality => (
-            <div
+            <button type="button"
               key={quality}
               className={`${css.coreCard} ${css.itemInspectable} ${css[`core_${quality}`]}`}
-              tabIndex={0}
+              aria-haspopup="dialog"
+              onClick={() => setItem({ name: coreItemName(props.t, quality), description: props.t('captureCoreDescription', { power: CORE_CAPTURE_POWER[quality].toFixed(2) }) })}
               aria-label={`${coreItemName(props.t, quality)}. ${props.t('captureCoreDescription', { power: CORE_CAPTURE_POWER[quality].toFixed(2) })}`}
             >
               <span className={`${css.bigCore} ${css[`core_${quality}`]}`} />
               <strong>{coreItemName(props.t, quality)}</strong>
               <b>× {props.state.cores[quality]}</b>
-              <span className={css.itemTooltip} role="tooltip">
-                <strong>{coreItemName(props.t, quality)}</strong>
-                <small>{props.t('captureCoreDescription', { power: CORE_CAPTURE_POWER[quality].toFixed(2) })}</small>
-              </span>
-            </div>
+            </button>
           ))}
         </div>
         <h2>{props.t('materialInventory')}</h2>
         <div className={css.coreGrid}>
           {CAPTURE_CORE_QUALITIES.map(quality => (
-            <div
+            <button type="button"
               key={quality}
               className={`${css.coreCard} ${css.materialCard} ${css.itemInspectable} ${css[`core_${quality}`]}`}
-              tabIndex={0}
+              aria-haspopup="dialog"
+              onClick={() => setItem({ name: materialItemName(props.t, quality), description: props.t('growthMaterialDescription', { xp: MATERIAL_XP[quality] }) })}
               aria-label={`${materialItemName(props.t, quality)}. ${props.t('growthMaterialDescription', { xp: MATERIAL_XP[quality] })}`}
             >
               <span className={`${css.materialShard} ${css[`core_${quality}`]}`} />
               <strong>{materialItemName(props.t, quality)}</strong>
               <small className={css.materialXp}>+{MATERIAL_XP[quality]} EXP</small>
               <b>× {props.state.materials[quality]}</b>
-              <span className={css.itemTooltip} role="tooltip">
-                <strong>{materialItemName(props.t, quality)}</strong>
-                <small>{props.t('growthMaterialDescription', { xp: MATERIAL_XP[quality] })}</small>
-              </span>
-            </div>
+            </button>
           ))}
         </div>
+        <div className={css.detailActions}>
+          <button type="button" onClick={() => setView('stats')}>{props.zh ? '活动统计 ↗' : 'Activity ↗'}</button>
+          <button type="button" onClick={() => setView('log')}>{props.t('eventLog')} ↗</button>
+        </div>
+      </section>
+      {view === 'stats' && <PanelDialog title={props.zh ? '活动统计' : 'Activity'} closeLabel={props.t('closeCodekinDetail')} onClose={() => setView(undefined)}>
         {props.state.idle.lastReward !== undefined && (
           <p className={css.idleReward}>
             {props.t('idleReward', { minutes: props.state.idle.lastReward.elapsedMinutes })}
@@ -1329,18 +1369,21 @@ function InventoryView(props: {
           <span><b>{stats.wildDefeats}</b>{props.t('defeatCount')}</span>
           <span><b>{stats.currentSuccessStreak}</b>{props.t('streak')}</span>
         </div>
-      </section>
+      </PanelDialog>}
+      {view === 'log' && <PanelDialog title={props.t('eventLog')} closeLabel={props.t('closeCodekinDetail')} onClose={() => setView(undefined)}>
       <section className={css.logPanel}>
-        <h2>{props.t('eventLog')}</h2>
         {props.state.log.length === 0
           ? <p>{props.t('emptyLog')}</p>
-          : <ol>{props.state.log.map(entry => (
+          : <ol>{paging.items.map(entry => (
               <li key={entry.id}>
                 <time>{new Date(entry.at).toLocaleTimeString()}</time>
                 <span>{logText(entry, props.t, props.zh)}</span>
               </li>
             ))}</ol>}
       </section>
+        <PageControls {...paging} zh={props.zh} />
+      </PanelDialog>}
+      {item !== undefined && <PanelDialog title={item.name} closeLabel={props.t('closeCodekinDetail')} onClose={() => setItem(undefined)}><p>{item.description}</p></PanelDialog>}
     </div>
   )
 }
@@ -1363,15 +1406,7 @@ const SIGNAL_RULE_KEYS: Record<TraceEcology, TraceWildLocaleKey> = {
   aegis: 'signalRuleAegis', glitch: 'signalRuleGlitch',
 }
 
-function BattleHoverDetail(props: { title: string; meta: string; body: string }) {
-  return (
-    <span className={css.battleHoverDetail} role="tooltip">
-      <b>{props.title}</b>
-      <small>{props.meta}</small>
-      <span>{props.body}</span>
-    </span>
-  )
-}
+
 
 function tileLabel(tile: MatchTile, index: number, t: TraceWildOverlayProps['t']): string {
   const ecology = t(ECOLOGY_KEYS[tile.ecology])
@@ -1451,6 +1486,7 @@ function BattleView(props: {
   const battle = props.state.battle!
   const dialog = useDialogAccessibility()
   const [selectedTile, setSelectedTile] = useState<number>()
+  const [infoOpen, setInfoOpen] = useState(false)
   const [focusedTile, setFocusedTile] = useState(0)
   const boardElement = useRef<HTMLDivElement>(null)
   const boardHadFocus = useRef(false)
@@ -1892,7 +1928,6 @@ function BattleView(props: {
   })} ${battle.bossSkillArmed
     ? props.t('bossSkillReadyDetail')
     : props.t('bossSkillChargingDetail', { remaining: Math.max(0, 24 - battle.bossEnergy) })}`
-  const bossSkillLabel = `${bossSkillTitle}. ${bossSkillMeta}. ${bossSkillBody}`
   const transitionTitle = props.transition === undefined
     ? undefined
     : props.t(props.transition.kind === 'tower-cleared'
@@ -2029,6 +2064,7 @@ function BattleView(props: {
             </span>
           </div>
           <div className={css.battleWindowActions}>
+            <button type="button" className={css.flee} onClick={() => setInfoOpen(true)} aria-label={props.zh ? '战斗说明' : 'Battle guide'}>?</button>
             <button type="button" className={css.flee} disabled={locked || battle.turnOwner === 'boss'} onClick={() => { void props.act({ type: 'flee' }) }}>{props.t('flee')}</button>
             <button type="button" className={css.flee} disabled={locked} onClick={props.minimize} aria-label={props.t('minimizeBattle')} title={props.t('minimizeBattle')}>−</button>
           </div>
@@ -2279,32 +2315,20 @@ function BattleView(props: {
                 </section>
               )}
             </div>
-            <p className={css.boardHelp}>{props.t('boardHelp')}</p>
             <p className={`${css.signalRule} ${css[`signalRule_${battle.turnOwner === 'boss' ? wild.ecology : activeDefinition.ecology}`]}`}>
               {props.t(SIGNAL_RULE_KEYS[battle.turnOwner === 'boss' ? wild.ecology : activeDefinition.ecology])}
               {battle.turnOwner === 'boss' ? ` ${props.t('signalBossRule')}` : ''}
             </p>
           </div>
 
-          {battle.mode === 'tower' && (
-            <div className={css.towerBattleStatus}>
-              <span className={css.towerBattleMark} aria-hidden="true">▲</span>
-              <div>
-                <strong>{props.t('towerNoCapture')}</strong>
-                <small>{props.t('towerBattleReward', { floor: battle.towerFloor ?? 1 })}</small>
-              </div>
-              <b
-                className={css.battleHoverTrigger}
-                tabIndex={0}
-                aria-label={bossSkillLabel}
-              >
-                {bossSkillTitle}
-                <BattleHoverDetail title={bossSkillTitle} meta={bossSkillMeta} body={bossSkillBody} />
-              </b>
-            </div>
-          )}
 
         </div>
+        {infoOpen && <PanelDialog title={props.zh ? '战斗说明' : 'Battle guide'} closeLabel={props.t('closeCodekinDetail')} onClose={() => setInfoOpen(false)}>
+          <p>{props.t('boardHelp')}</p>
+          <p>{props.t(SIGNAL_RULE_KEYS[battle.turnOwner === 'boss' ? wild.ecology : activeDefinition.ecology])}</p>
+          {battle.mode === 'tower' && <><h3>{props.t('towerNoCapture')}</h3><p>{props.t('towerBattleReward', { floor: battle.towerFloor ?? 1 })}</p>
+            <h3>{bossSkillTitle}</h3><p>{bossSkillMeta}</p><p>{bossSkillBody}</p></>}
+        </PanelDialog>}
         {props.transition !== undefined && transitionTitle !== undefined && (
           <div
             key={props.transition.key}

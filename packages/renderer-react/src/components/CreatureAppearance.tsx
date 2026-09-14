@@ -67,7 +67,7 @@ export function CreatureAppearancePortrait(props: {
     {visible.source === undefined ? <span className={css.placeholder} aria-hidden="true">?</span>
       : <img key={`${visible.identity}-${visible.source}`} className={css.current} src={visible.source} alt=""
           data-creature-id={props.creature.id} data-creature-level={props.captured.level} data-creature-appearance={visible.appearance}
-          decoding="async" draggable={false} onError={() => {
+          loading="eager" {...{ fetchpriority: 'high' }} decoding="async" draggable={false} onError={() => {
             const source = visible.source === resolved.fallback ? undefined : resolved.fallback
             const fallback = { ...visible, source, appearance: 'original' as const }
             visibleRef.current = fallback; setVisible(fallback)
@@ -82,6 +82,7 @@ export function CreatureAppearancePicker(props: {
   t: Translate
   busy: boolean
   battleActive: boolean
+  inDialog?: boolean
   onSelect: (appearance: CreatureAppearance) => void
   onClose: () => void
 }) {
@@ -89,15 +90,15 @@ export function CreatureAppearancePicker(props: {
   const selection = useRef<HTMLButtonElement>(null)
   useEffect(() => {
     selection.current?.focus({ preventScroll: true })
-    selection.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    if (!props.inDialog) selection.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }, [])
   const evolvedAvailable = contentAssetUrl(`creature:${props.creature.id}:evolved`) !== undefined
   const ultimateAvailable = props.creature.rarity === 'apex' && contentAssetUrl(`creature:${props.creature.id}:ultimate`) !== undefined
   const appearances: CreatureAppearance[] = ultimateAvailable ? ['original', 'evolved', 'ultimate'] : ['original', 'evolved']
   return <section className={css.picker} id="codekin-appearance-picker" role="region" aria-label={props.t('appearanceTitle')}
     onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); props.onClose() } }}>
-    <header><div><strong>{props.t('appearanceTitle')}</strong><small>{props.t(props.battleActive ? 'appearanceBattleLocked' : 'appearanceHint')}</small></div>
-      <button type="button" onClick={props.onClose} aria-label={props.t('appearanceClose')}>×</button></header>
+    <header><div>{!props.inDialog && <strong>{props.t('appearanceTitle')}</strong>}<small>{props.t(props.battleActive ? 'appearanceBattleLocked' : 'appearanceHint')}</small></div>
+      {!props.inDialog && <button type="button" onClick={props.onClose} aria-label={props.t('appearanceClose')}>×</button>}</header>
     <div className={css.options} data-option-count={appearances.length}>
       {appearances.map(appearance => {
         const unlockLevel = appearance === 'ultimate' ? CREATURE_ULTIMATE_LEVEL : CREATURE_EVOLUTION_LEVEL

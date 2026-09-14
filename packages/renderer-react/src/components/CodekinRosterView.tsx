@@ -32,6 +32,7 @@ import {
   RARITY_KEYS,
   creatureName,
 } from './creature-presentation.tsx'
+import { PanelDialog, PageControls, usePagination } from './PanelDialog.tsx'
 import { useDialogAccessibility } from './dialog-accessibility.ts'
 import { CreatureAppearancePicker, CreatureAppearancePortrait } from './CreatureAppearance.tsx'
 import appearanceCss from './creature-appearance.module.css'
@@ -70,6 +71,13 @@ export function CodekinView(props: {
   const [qualityFilter, setQualityFilter] = useState<CodekinRosterQuality>('all')
   const [rosterSort, setRosterSort] = useState<CodekinRosterSort>('default')
   const [query, setQuery] = useState('')
+  const [shortPanel, setShortPanel] = useState(false)
+  useEffect(() => {
+    const media = window.matchMedia('(max-height: 760px)')
+    const update = () => setShortPanel(media.matches)
+    update(); media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
   useEffect(() => { props.onEditingChange?.(editing) }, [editing, props.onEditingChange])
   const roster = useMemo<CodekinRosterEntry[]>(() => {
     const entries: CodekinRosterEntry[] = []
@@ -87,6 +95,7 @@ export function CodekinView(props: {
         sort: rosterSort,
         query,
       }), [editing, ecologyFilter, qualityFilter, query, roster, rosterSort])
+  const paging = usePagination(visibleRoster, editing && shortPanel ? 3 : 6, `${editing}-${ecologyFilter}-${qualityFilter}-${rosterSort}-${query}`)
   const activeFilterCount = Number(ecologyFilter !== 'all')
     + Number(qualityFilter !== 'all')
     + Number(rosterSort !== 'default')
@@ -117,12 +126,12 @@ export function CodekinView(props: {
     setQuery('')
   }
   return (
-    <div className={`${css.panelPage} ${editing ? css.codekinEditMode : ''}`}>
+    <div className={`${css.panelPage} ${css.rosterPage} ${editing ? css.codekinEditMode : ''}`}>
       <div className={css.pageHeading}>
         <div>
           <span className={css.sectionKicker}>YOUR COLLECTION</span>
           <h2>{props.t('squad')}</h2>
-          <p>{props.t(editing ? 'squadEditHelp' : 'squadHelp')}</p>
+          {editing && <p>{props.t('squadEditHelp')}</p>}
         </div>
         <div className={css.squadActions}>
           {editing
@@ -165,7 +174,8 @@ export function CodekinView(props: {
         <small aria-live="polite">{visibleRoster.length} / {roster.length}</small>
       </div>}
       {!editing && filtersOpen && (
-        <section id="codekin-roster-controls" className={css.rosterControls} aria-label={props.t('rosterControls')}>
+        <PanelDialog id="codekin-roster-controls" title={props.t('rosterControls')} closeLabel={props.t('closeCodekinDetail')} onClose={() => setFiltersOpen(false)}>
+          <p>{props.t('squadHelp')}</p><div className={css.rosterControls}>
           <div className={css.rosterControlRow}>
             <strong>{props.t('rosterAttribute')}</strong>
             <div className={css.rosterControlOptions} role="group" aria-label={props.t('rosterAttribute')}>
@@ -216,10 +226,10 @@ export function CodekinView(props: {
             <span>{props.t('rosterResults', { count: visibleRoster.length })}</span>
             <button type="button" disabled={activeFilterCount === 0} onClick={resetFilters}>{props.t('rosterReset')}</button>
           </footer>
-        </section>
+        </div></PanelDialog>
       )}
       <div className={css.creatureCards}>
-        {visibleRoster.map(({ captured, creature }) => {
+        {paging.items.map(({ captured, creature }) => {
           const draftPosition = props.draft.indexOf(captured.instanceId)
           const squadPosition = props.state.squad.indexOf(captured.instanceId)
           const deployed = squadPosition >= 0
@@ -273,6 +283,7 @@ export function CodekinView(props: {
           )
         })}
       </div>
+      <PageControls {...paging} zh={props.zh} />
       {!editing && visibleRoster.length === 0 && (
         <div className={css.rosterEmpty}>
           <strong>{props.t('rosterNoMatches')}</strong>
@@ -295,6 +306,7 @@ export function CodekinDetailModal(props: {
   dismiss: () => void
   release: () => void
 }) {
+  const [detailOpen, setDetailOpen] = useState<'stats' | 'protocols' | 'growth'>()
   const [appearanceOpen, setAppearanceOpen] = useState(false)
   const [appearanceChanging, setAppearanceChanging] = useState(false)
   const hanger = useRef<HTMLButtonElement>(null)
@@ -317,7 +329,7 @@ export function CodekinDetailModal(props: {
     >
       <section
         ref={dialog.dialogRef}
-        className={css.codekinDetailModal}
+        className={`${css.codekinDetailModal} ${css.compactDetail}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="codekin-detail-title"
@@ -361,27 +373,30 @@ export function CodekinDetailModal(props: {
           </div>
         </header>
 
-        {appearanceOpen && <CreatureAppearancePicker captured={props.captured} creature={props.creature} t={props.t}
+        <div className={css.detailActions}>
+          <button type="button" onClick={() => setDetailOpen('stats')}>{props.t('codekinStats')} ↗</button>
+          <button type="button" onClick={() => setDetailOpen('protocols')}>{props.t('codekinProtocols')} ↗</button>
+          <button type="button" onClick={() => setDetailOpen('growth')}>{props.t('growth')} ↗</button>
+        </div>
+        {appearanceOpen && <PanelDialog title={props.t('appearanceTitle')} closeLabel={props.t('closeCodekinDetail')} onClose={closeAppearance}><CreatureAppearancePicker inDialog captured={props.captured} creature={props.creature} t={props.t}
           busy={props.busy || appearanceChanging} battleActive={props.state.battle !== undefined} onClose={closeAppearance}
           onSelect={appearance => {
             if (props.busy || appearanceChanging || props.state.battle !== undefined) return
             void props.act({ type: 'set-creature-appearance', creatureInstanceId: props.captured.instanceId, appearance })
               .then(response => { if (response !== undefined) closeAppearance() })
-          }} />}
+          }} /></PanelDialog>}
 
-        <section className={css.codekinDetailSection}>
-          <h3>{props.t('codekinStats')}</h3>
+        {detailOpen === 'stats' && <PanelDialog title={props.t('codekinStats')} closeLabel={props.t('closeCodekinDetail')} onClose={() => setDetailOpen(undefined)}><section className={css.codekinDetailSection}>
           <div className={css.codekinDetailStats}>
             <span><b>{stats.hp.toLocaleString()}</b>{props.t('statRuntime')}</span>
             <span><b>{stats.attack.toLocaleString()}</b>{props.t('statCompute')}</span>
             <span><b>{stats.defense.toLocaleString()}</b>{props.t('statGuard')}</span>
             <span><b>{stats.speed.toLocaleString()}</b>{props.t('statResponse')}</span>
           </div>
-        </section>
+        </section></PanelDialog>}
 
-        {skill !== undefined && (
-          <section className={css.codekinDetailSection}>
-            <h3>{props.t('codekinProtocols')}</h3>
+        {detailOpen === 'protocols' && skill !== undefined && (
+          <PanelDialog title={props.t('codekinProtocols')} closeLabel={props.t('closeCodekinDetail')} onClose={() => setDetailOpen(undefined)}><section className={css.codekinDetailSection}>
             <div className={css.codekinProtocols}>
               <article>
                 <span>{props.t('passiveSkill')}</span>
@@ -394,10 +409,10 @@ export function CodekinDetailModal(props: {
                 <p>{props.zh ? skill.activeDescriptionZh : skill.activeDescriptionEn}</p>
               </article>
             </div>
-          </section>
+          </section></PanelDialog>
         )}
 
-        <section className={`${css.codekinDetailSection} ${css.codekinGrowth}`}>
+        {detailOpen === 'growth' && <PanelDialog title={props.t('growth')} closeLabel={props.t('closeCodekinDetail')} onClose={() => setDetailOpen(undefined)}><section className={`${css.codekinDetailSection} ${css.codekinGrowth}`}>
           <header>
             <div>
               <h3>{props.t('growth')}</h3>
@@ -420,7 +435,10 @@ export function CodekinDetailModal(props: {
                 type="button"
                 className={css[`core_${quality}`]}
                 disabled={props.busy || appearanceChanging || props.captured.level >= MAX_PLAYER_LEVEL || props.state.materials[quality] <= 0}
-                onClick={() => { void props.act({ type: 'feed-material', creatureInstanceId: props.captured.instanceId, quality, count: 1 }) }}
+                onClick={() => { void props.act({ type: 'feed-material', creatureInstanceId: props.captured.instanceId, quality, count: 1 }).then(response => {
+                  const next = response?.state.creatures.find(owned => owned.instanceId === props.captured.instanceId)
+                  if (next !== undefined && ((props.captured.level < 30 && next.level >= 30) || (props.captured.level < 60 && next.level >= 60))) setDetailOpen(undefined)
+                }) }}
                 title={`${props.t('feed')} · ${materialItemName(props.t, quality)} · +${MATERIAL_XP[quality]} EXP`}
                 aria-label={`${props.t('feed')} ${materialItemName(props.t, quality)} · +${MATERIAL_XP[quality]} EXP`}
               >
@@ -431,7 +449,7 @@ export function CodekinDetailModal(props: {
               </button>
             ))}
           </div>
-        </section>
+        </section></PanelDialog>}
 
         <footer className={css.codekinDetailFooter}>
           <button

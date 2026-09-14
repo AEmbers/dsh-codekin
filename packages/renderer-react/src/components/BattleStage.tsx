@@ -3,12 +3,13 @@ import type { CSSProperties } from 'react'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import { playerStats } from '../../../engine/src/balance.ts'
 import type { BattlePartyMember, BattleState, CapturedCreature, EnemyIntent } from '../../../engine/src/types.ts'
-import { resolveCreatureSprite, type CreatureLook } from '../appearance-presentation.ts'
+import { decodeCreatureImage, isCreatureImageReady, resolveCreatureSprite, type CreatureLook } from '../appearance-presentation.ts'
 import { contentAssetUrl, creatureById, skillByCreatureId } from '../content.ts'
 import { BATTLE_MOTION } from '../battle-motion.ts'
 import { battlePortraitFraming } from '../battle-portrait-framing.ts'
 import type { TraceWildLocaleKey } from '../locales.ts'
 import { CORE_KEYS, CreatureSprite, ECOLOGY_KEYS, creatureName } from './creature-presentation.tsx'
+import { PanelDialog } from './PanelDialog.tsx'
 import css, { styleText } from './battle-stage.module.css'
 
 export interface BattleStageDamage {
@@ -45,6 +46,36 @@ const intentDetails: Record<EnemyIntent, TraceWildLocaleKey> = {
 }
 const ratio = (value: number, max: number) => Math.max(0, Math.min(1, value / Math.max(1, max)))
 
+function PortraitPicture(props: { creatureId: string; look: CreatureLook; frame: 'body' | 'face' }) {
+  const creature = creatureById(props.creatureId)
+  const ultimate = resolveCreatureSprite(props.creatureId, props.look).appearance === 'ultimate'
+  const silhouette = ultimate ? contentAssetUrl(`creature:${props.creatureId}:ultimate-silhouette`) : undefined
+  const [loadedMask, setLoadedMask] = useState<string>()
+  const maskReady = silhouette !== undefined && (loadedMask === silhouette || isCreatureImageReady(silhouette))
+  useEffect(() => {
+    if (silhouette === undefined) return
+    let canceled = false
+    void decodeCreatureImage(silhouette).then(ready => {
+      if (!canceled && ready) setLoadedMask(silhouette)
+    })
+    return () => { canceled = true }
+  }, [silhouette])
+  if (creature === undefined) return null
+  const sprite = <CreatureSprite creature={creature} captured={props.look} priority={props.frame === 'body' ? 'high' : 'auto'} eager />
+  if (!ultimate) return sprite
+  const framing = battlePortraitFraming(props.creatureId, props.frame)
+  // A missing/pending CSS mask is transparent. Keep the scene at full brightness until it is decoded.
+  return <>
+    <span className={`${css.portraitCrop} ${maskReady ? css.portraitScene : ''}`} data-silhouette-ready={maskReady}
+      data-portrait-crop={props.frame} style={framing}>{sprite}</span>
+    {maskReady && <span className={css.portraitGlow}>
+      <span className={css.portraitCrop} data-portrait-crop={props.frame} style={framing}>
+        <CreatureSprite creature={creature} captured={props.look} silhouetteMask={silhouette} eager />
+      </span>
+    </span>}
+  </>
+}
+
 /** Retain the departing portrait until its crossfade finishes, without remounting controls. */
 function Portrait(props: { creatureId: string; look: CreatureLook; reducedMotion: boolean; frame: 'body' | 'face' }) {
   const key = `${props.look.instanceId ?? props.creatureId}:${resolveCreatureSprite(props.creatureId, props.look).appearance}`
@@ -60,22 +91,7 @@ function Portrait(props: { creatureId: string; look: CreatureLook; reducedMotion
     const timer = window.setTimeout(() => { setDeparting(undefined) }, BATTLE_MOTION.handoff + 20)
     return () => { window.clearTimeout(timer) }
   }, [key, props.creatureId, props.reducedMotion])
-  const picture = (creatureId: string, look: CreatureLook) => {
-    const creature = creatureById(creatureId)
-    if (creature === undefined) return undefined
-    const framing = resolveCreatureSprite(creatureId, look).appearance === 'ultimate' ? battlePortraitFraming(creatureId, props.frame) : undefined
-    const sprite = <CreatureSprite creature={creature} captured={look} eager />
-    if (framing === undefined) return sprite
-    const silhouette = contentAssetUrl(`creature:${creatureId}:ultimate-silhouette`)
-    return <>
-      <span className={`${css.portraitCrop} ${silhouette === undefined ? '' : css.portraitScene}`} data-portrait-crop={props.frame} style={framing}>{sprite}</span>
-      {silhouette !== undefined && <span className={css.portraitGlow}>
-        <span className={css.portraitCrop} data-portrait-crop={props.frame} style={framing}>
-          <CreatureSprite creature={creature} captured={look} silhouetteMask={silhouette} eager />
-        </span>
-      </span>}
-    </>
-  }
+  const picture = (creatureId: string, look: CreatureLook) => <PortraitPicture creatureId={creatureId} look={look} frame={props.frame} />
   return <span className={css.portraitLayers} aria-hidden="true">
     {departing !== undefined && <span key={`out-${departing.key}`} className={css.departing}>{picture(departing.creatureId, departing.look)}</span>}
     <span key={key} className={css.arriving}>{picture(props.creatureId, props.look)}</span>
@@ -85,29 +101,7 @@ function Portrait(props: { creatureId: string; look: CreatureLook; reducedMotion
 export function BattleStage(props: BattleStageProps) {
   const { battle, t, zh } = props
   const [pinnedDetail, setPinnedDetail] = useState<string>()
-  const [hoveredDetail, setHoveredDetail] = useState<string>()
-  const detailTimer = useRef<number>()
-  const stageRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    window.clearTimeout(detailTimer.current)
-    setPinnedDetail(undefined); setHoveredDetail(undefined)
-  }, [battle.id])
-  useEffect(() => () => { window.clearTimeout(detailTimer.current) }, [])
-  const openDetail = (id: string) => {
-    window.clearTimeout(detailTimer.current)
-    setHoveredDetail(id)
-  }
-  useEffect(() => {
-    if (pinnedDetail === undefined) return
-    const outside = (event: PointerEvent) => {
-      if (event.target instanceof Node && !stageRef.current?.contains(event.target)) {
-        setPinnedDetail(undefined)
-        setHoveredDetail(undefined)
-      }
-    }
-    document.addEventListener('pointerdown', outside)
-    return () => { document.removeEventListener('pointerdown', outside) }
-  }, [pinnedDetail])
+  useEffect(() => { setPinnedDetail(undefined) }, [battle.id])
   const wild = creatureById(battle.wildCreatureId)
   const active = battle.party[battle.activeIndex]
   const activeSkill = active === undefined ? undefined : skillByCreatureId(active.creatureId)
@@ -139,40 +133,23 @@ export function BattleStage(props: BattleStageProps) {
     const maxHp = enemy ? battle.wildMaxHp : battle.partyMaxHp
     const shield = enemy ? props.displayedWildShield : props.displayedPartyShield
     const modifiers = enemy ? battle.bossAmplifiers : battle.partyAmplifiers.filter(value => value.targetInstanceId === undefined || value.targetInstanceId === id)
-    const detailOpen = (pinnedDetail ?? hoveredDetail) === id
+    const detailOpen = pinnedDetail === id
     const portraitCanCast = !enemy && !small && canCast && member.instanceId === active?.instanceId
     const portraitAction = portraitCanCast
       ? `${t('castSkill')} · ${zh ? skill?.activeNameZh : skill?.activeNameEn}`
       : zh ? '战斗详情' : 'Battle details'
     return <div className={`${css.fighter} ${enemy ? css.enemy : small ? css.teammate : css.active} ${ready ? css.ready : ''}`} data-detail-open={detailOpen || undefined} data-appearance={appearance}
-      onPointerEnter={event => { if (event.pointerType !== 'touch') openDetail(id) }}
-      onPointerLeave={event => {
-        if (event.currentTarget.contains(document.activeElement)) return
-        window.clearTimeout(detailTimer.current)
-        detailTimer.current = window.setTimeout(() => { setHoveredDetail(undefined) }, 160)
-      }}
-      onFocusCapture={() => { openDetail(id) }}
-      onBlurCapture={event => {
-        if (!event.currentTarget.contains(event.relatedTarget)) { setPinnedDetail(undefined); setHoveredDetail(undefined) }
-      }}
-      onKeyDown={event => {
-        if (event.key === 'Escape') {
-          event.stopPropagation()
-          event.currentTarget.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true })
-          setPinnedDetail(undefined); setHoveredDetail(undefined)
-        }
-      }}>
+      >
       <button type="button" className={css.portraitButton} data-strike-target={enemy ? 'boss' : small ? undefined : 'player'}
         data-can-cast={portraitCanCast || undefined}
         aria-label={`${creatureName(creature, zh)} · ${portraitAction}`} title={portraitAction}
-        aria-describedby={detailId} aria-expanded={detailOpen}
+        aria-haspopup={portraitCanCast ? undefined : "dialog"} aria-controls={detailOpen ? detailId : undefined} aria-expanded={detailOpen}
         onClick={() => {
           if (portraitCanCast) {
-            window.clearTimeout(detailTimer.current)
-            setPinnedDetail(undefined); setHoveredDetail(undefined)
+            setPinnedDetail(undefined)
             props.onCast(member.instanceId)
           } else {
-            setPinnedDetail(value => value === id ? undefined : id); setHoveredDetail(undefined)
+            setPinnedDetail(id)
           }
         }}>
         <Portrait creatureId={creature.id} look={look} reducedMotion={props.reducedMotion} frame={small ? 'face' : 'body'} />
@@ -181,8 +158,10 @@ export function BattleStage(props: BattleStageProps) {
       {enemy ? <div className={css.enemyMeters}>
         <div className={css.hp} role="meter" aria-label={t('health')} aria-valuenow={hp} aria-valuemin={0} aria-valuemax={maxHp}><i style={{ width: `${ratio(hp, maxHp) * 100}%` }} /><span>{hp.toLocaleString()} / {maxHp.toLocaleString()}</span></div>
         <div className={css.energy} role="meter" aria-label={t('bossEnergy')} aria-valuenow={energy} aria-valuemin={0} aria-valuemax={maxEnergy}><i style={{ width: `${ratio(energy, maxEnergy) * 100}%` }} /></div>
-      </div> : <strong className={css.portraitName}>{creatureName(creature, zh)}</strong>}
-      <div id={detailId} role="tooltip" tabIndex={detailOpen ? 0 : -1} className={css.detail}>
+      </div> : <button type="button" className={css.portraitName} aria-haspopup="dialog"
+        aria-label={`${creatureName(creature, zh)} · ${zh ? '查看详情' : 'View details'}`}
+        onClick={() => setPinnedDetail(id)}>{creatureName(creature, zh)}</button>}
+      {detailOpen && <PanelDialog id={detailId} title={creatureName(creature, zh)} closeLabel={t('closeCodekinDetail')} onClose={() => setPinnedDetail(undefined)}><div className={css.detailSheet}>
         <strong>{creatureName(creature, zh)}</strong>
         <small>Lv.{enemy ? battle.wildLevel : member.level} · {t(CORE_KEYS[enemy ? battle.wildQuality : member.quality])} · {t(ECOLOGY_KEYS[creature.ecology])}</small>
         <dl><div><dt>{enemy ? t('health') : t('teamRuntime')}</dt><dd>{hp.toLocaleString()} / {maxHp.toLocaleString()}</dd></div>
@@ -197,11 +176,11 @@ export function BattleStage(props: BattleStageProps) {
         {enemy && <><p><b>{t('enemyIntent')} · {t(intentKeys[battle.enemyIntent])}</b>{t('enemyIntentMeta', { target })}<br />{t(intentDetails[battle.enemyIntent], { count: battle.enemyIntent === 'corrupt' ? Math.min(6, 2 + battle.bossSkillTier) : Math.min(5, Math.max(3, battle.bossSkillTier)) })}</p>
           <p><b>{t('towerSkillTier', { tier: battle.bossSkillTier })} · {battle.bossSkillArmed ? t('skillReady') : t('skillCharging')}</b>{t('bossSkillTierDetail', { tier: battle.bossSkillTier, hazards: Math.min(6, 2 + battle.bossSkillTier), locks: Math.min(5, Math.max(3, battle.bossSkillTier)) })}</p></>}
         {modifiers.map(value => <small key={`${value.signal}-${value.stat}-${value.scope}`}>{zh ? value.stat === 'attack' ? '算力增幅' : '防御穿透' : value.stat === 'attack' ? 'Attack boost' : 'Defense penetration'} +{value.valuePermille / 10}% · {value.remainingRounds} {zh ? '回合' : 'rounds'}</small>)}
-      </div>
+      </div></PanelDialog>}
     </div>
   }
 
-  return <div ref={stageRef} className={css.stage} data-battle-stage="diagonal" data-reduced={props.reducedMotion || undefined}
+  return <div className={css.stage} data-battle-stage="diagonal" data-reduced={props.reducedMotion || undefined}
     style={{ '--strike-flight': `${BATTLE_MOTION.flight}ms`, '--strike-impact': `${BATTLE_MOTION.impact}ms`, '--portrait-duration': `${BATTLE_MOTION.handoff}ms` } as CSSProperties}>
     <style data-plugin-css="codekin-battle-stage">{styleText}</style>
     <div className={css.floor} aria-hidden="true" /><span className={css.stageLabel} aria-hidden="true">{battle.turnOwner === 'boss' ? 'ENEMY PHASE' : 'YOUR MOVE'}<i>◆ CODEKIN</i></span>

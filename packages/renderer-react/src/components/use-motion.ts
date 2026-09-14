@@ -12,7 +12,8 @@ export function useReducedMotion(preference?: boolean): { reducedMotion: boolean
     media.addEventListener('change', update)
     return () => { media.removeEventListener('change', update) }
   }, [])
-  return { reducedMotion: preference ?? system, systemReducedMotion: system }
+  // The first visit presents the full experience; explicit player choices persist.
+  return { reducedMotion: preference ?? false, systemReducedMotion: system }
 }
 
 /** One finite spring per surface; idle surfaces schedule no animation frames. */

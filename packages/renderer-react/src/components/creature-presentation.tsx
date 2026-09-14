@@ -5,7 +5,7 @@ import type {
   CreatureAppearance,
   TraceEcology,
 } from '../../../engine/src/types.ts'
-import { resolveCreatureSprite, type CreatureLook } from '../appearance-presentation.ts'
+import { isCreatureImageReady, resolveCreatureSprite, type CreatureLook } from '../appearance-presentation.ts'
 import type { TraceWildLocaleKey } from '../locales.ts'
 import css from './tracewild.module.css'
 
@@ -27,12 +27,15 @@ export const CreatureSprite = memo(function CreatureSprite(props: {
   size?: 'tiny' | 'small' | 'medium' | 'large'
   unknown?: boolean
   eager?: boolean
+  priority?: 'high' | 'auto'
   captured?: CreatureLook | undefined
   level?: number | undefined
   appearance?: CreatureAppearance | undefined
   silhouetteMask?: string | undefined
 }) {
   const [failedSources, setFailedSources] = useState<ReadonlySet<string>>(() => new Set())
+  const [retriedSources, setRetriedSources] = useState<ReadonlySet<string>>(() => new Set())
+  const [loadedSource, setLoadedSource] = useState<string>()
   const look = props.captured ?? { level: props.level ?? 1, ...(props.appearance === undefined ? {} : { appearance: props.appearance }) }
   const resolved = resolveCreatureSprite(props.creature.id, look)
   const source = resolved.source !== undefined && !failedSources.has(resolved.source) ? resolved.source
@@ -42,24 +45,34 @@ export const CreatureSprite = memo(function CreatureSprite(props: {
     return <span className={`${className} ${css.spritePlaceholder}`} aria-hidden="true">?</span>
   }
   if (source === undefined) {
-    return <span className={`${className} ${css.spritePlaceholder}`} aria-hidden="true">?</span>
+    return <span className={`${className} ${css.spritePlaceholder}`} data-sprite-status="error" aria-hidden="true">?</span>
   }
+  // A new URL permits one network retry instead of reusing a failed browser request.
+  const requestSource = retriedSources.has(source) ? `${source}${source.includes('?') ? '&' : '?'}retry=1` : source
+  const loaded = loadedSource === requestSource || isCreatureImageReady(requestSource)
   return (
     <img
-      className={className}
-      src={source}
+      key={requestSource}
+      className={`${className} ${!loaded && props.silhouetteMask === undefined ? css.spriteLoading : ''}`}
+      src={requestSource}
       style={props.silhouetteMask !== undefined && source === resolved.source ? { maskImage: `url("${props.silhouetteMask}")`, maskSize: '100% 100%' } : undefined}
       data-creature-id={props.creature.id}
       data-creature-instance={look.instanceId}
       data-creature-appearance={source === resolved.source ? resolved.appearance : 'original'}
       data-creature-level={look.level}
+      data-sprite-status={loaded ? 'ready' : 'loading'}
       alt=""
       width={384}
       height={384}
-      loading={props.eager ? 'eager' : 'lazy'}
+      loading={props.eager === false ? 'lazy' : 'eager'}
+      {...{ fetchpriority: props.priority ?? 'auto' }}
       decoding="async"
       draggable={false}
-      onError={() => { setFailedSources(previous => new Set([...previous, source])) }}
+      onLoad={() => { setLoadedSource(requestSource) }}
+      onError={() => {
+        if (!retriedSources.has(source)) setRetriedSources(previous => new Set([...previous, source]))
+        else setFailedSources(previous => new Set([...previous, source]))
+      }}
     />
   )
 })

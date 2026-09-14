@@ -18,6 +18,7 @@ export interface PresentedAppearance {
     appearance: CreatureAppearance;
 }
 export declare function appearanceTransition(previous: PresentedAppearance, next: PresentedAppearance): 'none' | 'change' | 'evolution';
-/** Decode before swapping a visible portrait, retaining the old image on failure. */
-export declare function decodeCreatureImage(source: string): Promise<boolean>;
+export declare function isCreatureImageReady(source: string | undefined): boolean;
+/** Share pending work and retain a small decoded working set for portrait changes. */
+export declare function decodeCreatureImage(source: string, priority?: 'high' | 'low'): Promise<boolean>;
 //# sourceMappingURL=appearance-presentation.d.ts.map

@@ -4,8 +4,8 @@ export * from './mechanics.ts';
 export declare const CORE_CONTENT_PACK: {
     readonly manifest: {
         readonly id: "@nath-vikky/codekin-core";
-        readonly version: "0.3.7-rc.1";
-        readonly engine: ">=0.3.2 <0.4.0";
+        readonly version: "0.3.9-rc.1";
+        readonly engine: ">=0.3.9-rc.1 <0.4.0";
         readonly contentApi: 1;
     };
     readonly ecologies: {
@@ -50,6 +50,7 @@ export declare const CORE_CONTENT_PACK: {
         };
     }[];
     readonly creatures: {
+        companion?: import("../../../packages/content-sdk/src/types.ts").ContentCompanionProfile;
         number: number;
         id: string;
         name: {

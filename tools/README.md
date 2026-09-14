@@ -6,7 +6,7 @@ The repository includes deterministic tools for validating content and reproduci
 
 `pnpm check` includes display spring stability at 30/60/144 fps, bounded release momentum, keyboard board boundaries, local preference recovery, and normalized roster search. Renderer physics never update engine state or consume its random source.
 
-`pnpm lifecycle:dsh` also checks the installed UI in Chrome/Edge: dialog focus and Escape, roster search/reset, squad editing, arrow-key navigation, system reduced motion, and launcher focus restoration. For a visual review, check map, tower, roster, details and battle at both desktop and 390×844, then exercise a valid/invalid swap, window/launcher dragging, unsaved squad navigation, and capture rewards using an isolated DSH profile.
+`pnpm lifecycle:dsh` also checks the installed UI in Chrome/Edge: lounge interaction and story unlocks, dialog focus and Escape, roster search/reset, squad editing, arrow-key navigation, saved animation preferences, and launcher focus restoration. For a visual review, check lounge, map, tower, roster, details and battle at both desktop and 390×844, then exercise a valid/invalid swap, window/launcher dragging, unsaved squad navigation, and capture rewards using an isolated DSH profile.
 
 ## Content-pack lint
 
@@ -56,9 +56,15 @@ The core image budget is 4 MB for the launcher, 25 original sprites, 25 transpar
 
 ```sh
 pnpm lifecycle:dsh
-pnpm lifecycle:dsh --with-dsh-web 0.3.20
+pnpm lifecycle:dsh --with-dsh-web 0.3.22
 ```
 
-This release gate creates an isolated DSH Web `0.1.5-rc.1` profile, installs a local package tarball, starts the host, exercises the state and action routes, runs a headless Chrome/Edge roster and keyboard-accessibility smoke test, disables Codekin, restarts DSH, removes and reinstalls the plugin, and verifies that the same save and starter survive every transition. `--with-dsh-web 0.3.20` first installs and verifies that exact aggregate version, then runs the same lifecycle with both plugins present. CI uses this combined path for tarballs and the standalone path for Git sources. Pass `--source <package-spec>` to test a Git commit, release tarball, or registry package through the same path. Failed runs retain their temporary profile for diagnosis; successful runs remove it unless `--keep` is supplied. `--skip-browser` is available for host-only diagnosis but is not used by the release gate.
+This release gate creates an isolated DSH Web `0.1.5-rc.1` profile, installs a local package tarball, starts the host, exercises the state and action routes, runs a headless Chrome/Edge roster and keyboard-accessibility smoke test, disables Codekin, restarts DSH, removes and reinstalls the plugin, and verifies that the same save and starter survive every transition. `--with-dsh-web 0.3.22` first installs and verifies that exact aggregate version, then runs the same lifecycle with both plugins present. CI uses this combined path for tarballs and the standalone path for Git sources. Pass `--source <package-spec>` to test a Git commit, release tarball, or registry package through the same path. Failed runs retain their temporary profile for diagnosis; successful runs remove it unless `--keep` is supplied. `--skip-browser` is available for host-only diagnosis but is not used by the release gate.
 
-The browser smoke also checks that reduced motion follows the system until the player explicitly enables full motion, and that this override is persisted. Battle timing lives in `packages/renderer-react/src/battle-motion.ts`; reduced motion removes travel without removing turn and protocol reading time.
+The September 14, 2026 compatibility check also installs the already-published package directly:
+
+```sh
+pnpm lifecycle:dsh --with-dsh-web 0.3.22 --source @nath-vikky/dsh-codekin@0.3.8-rc.1
+```
+
+For the lounge version, the browser smoke emulates OS reduced motion and verifies that the first open still plays full animations. It then checks both explicit reduced and full preferences across reloads, including portrait visibility, saved bond progress and read status. Older published packages remain testable with their previous system-default behavior. Battle timing lives in `packages/renderer-react/src/battle-motion.ts`; reduced motion removes travel without removing turn and protocol reading time.

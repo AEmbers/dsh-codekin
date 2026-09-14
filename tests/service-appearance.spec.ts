@@ -48,6 +48,31 @@ function fixture() {
 }
 
 describe('service appearance persistence and settlement', () => {
+  it('saves lounge selection, bond cooldown and story reads across service restarts without gameplay settlement', () => {
+    const { service, persistence, random, advance } = fixture()
+    advance()
+    service.act({ type: 'set-companion', creatureInstanceId: instanceId })
+    service.act({ type: 'interact-companion', creatureInstanceId: instanceId })
+    const read = service.act({ type: 'read-companion-story', creatureInstanceId: instanceId, chapter: 0 })
+    expect(random).not.toHaveBeenCalled()
+    const restarted = new TraceWildService({} as Context, {
+      runtime: CORE_CODEKIN_RUNTIME, persistence, random, now: () => read.serverTime,
+    })
+    // Normal host startup still settles overdue rewards; the following lounge action must not settle again.
+    const afterRestart = restarted.snapshot()
+    random.mockClear()
+    const repeated = restarted.act({ type: 'interact-companion', creatureInstanceId: instanceId })
+    expect(repeated.state.lounge).toEqual({ selectedInstanceId: instanceId, bonds: {
+      [instanceId]: { points: 5, lastInteractionAt: read.serverTime, readStories: [0] },
+    } })
+    expect(repeated.state.revision).toBe(afterRestart.state.revision)
+    expect(repeated.state.materials).toEqual(afterRestart.state.materials)
+    expect(repeated.state.idle).toEqual(afterRestart.state.idle)
+    expect(random).not.toHaveBeenCalled()
+    repeated.state.lounge!.bonds[instanceId]!.points = 50
+    expect(persistence.load(read.serverTime).lounge!.bonds[instanceId]!.points).toBe(5)
+  })
+
   it('persists and broadcasts a cosmetic change without rolling an overdue idle reward', () => {
     const { service, persistence, random, advance } = fixture()
     const listener = vi.fn<(snapshot: TraceWildSnapshot) => void>()

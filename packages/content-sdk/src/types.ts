@@ -32,6 +32,7 @@ export interface CreatureDefinition {
   signatureProtocol: string
   spriteIndex: number
   stats: CreatureStats
+  companion?: ContentCompanionProfile
 }
 
 export interface CreatureSkillDefinition {
@@ -50,6 +51,12 @@ export interface CreatureSkillDefinition {
 export interface LocalizedContentText {
   zhCN: string
   en: string
+}
+
+export interface ContentCompanionProfile {
+  greeting: LocalizedContentText
+  lines: readonly LocalizedContentText[]
+  stories: readonly { title: LocalizedContentText; body: LocalizedContentText }[]
 }
 
 export interface ContentPackManifest {
@@ -98,6 +105,7 @@ export interface ContentCreatureDefinition {
   signatureProtocol: string
   sprite: string
   stats: ContentCreatureStats
+  companion?: ContentCompanionProfile
 }
 
 export interface ContentSkillDefinition {

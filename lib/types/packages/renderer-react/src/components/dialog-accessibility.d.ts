@@ -4,5 +4,5 @@ export interface DialogAccessibility<Element extends HTMLElement> {
     onDialogKeyDown(event: ReactKeyboardEvent<HTMLElement>): void;
 }
 /** Keeps keyboard focus inside a dialog and restores the invoking control. */
-export declare function useDialogAccessibility<Element extends HTMLElement = HTMLElement>(dismiss?: () => void, dismissalBlocked?: boolean): DialogAccessibility<Element>;
+export declare function useDialogAccessibility<Element extends HTMLElement = HTMLElement>(dismiss?: () => void, dismissalBlocked?: boolean, restoreFocusTo?: HTMLElement | null): DialogAccessibility<Element>;
 //# sourceMappingURL=dialog-accessibility.d.ts.map

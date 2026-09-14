@@ -1,3 +1,4 @@
+import { restoreCompanionLounge } from './companion.ts'
 import {
   CAPTURE_CORE_QUALITIES,
   TRACE_ECOLOGIES,
@@ -439,6 +440,8 @@ export function restoreTraceWildState(value: unknown, now = Date.now()): TraceWi
     })
   }
   next.starterChosen = root.starterChosen === true && next.creatures.length > 0
+  const lounge = restoreCompanionLounge(root.lounge, next.creatures, now)
+  if (lounge !== undefined) next.lounge = lounge
   const rawSquad = Array.isArray(root.squad) ? root.squad : []
   next.squad = [...new Set(rawSquad.filter((id): id is string => typeof id === 'string' && instanceIds.has(id)))].slice(0, 3)
   if (next.squad.length === 0 && next.creatures[0] !== undefined) next.squad = [next.creatures[0].instanceId]

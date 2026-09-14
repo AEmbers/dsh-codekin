@@ -105,3 +105,10 @@
 .stage[data-reduced] .impact { animation: none; opacity: .5; transform: none; }
 .stage[data-reduced] .fighter[data-appearance=evolved].ready .arriving img,.stage[data-reduced] .fighter[data-appearance=ultimate].ready .arriving .portraitGlow { animation: none; }
 @media(max-width:420px) { .stage { --stage-height: 280px; } .stageLabel { font-size: 18px; left: 12px; } .tray { gap: 4px; right: 7px; } .skill { padding: 7px 5px; } .skill strong { font-size: 10px; } .skill small { font-size: 8px; flex-wrap: wrap; gap: 1px; } .damageLane { gap: 5px; right: 7px; bottom: 96px; } .damage { padding-left: 5px; } .damage em { font-size: 8px; } .damage strong { font-size: 22px; } .enemy>.portraitButton { height: 112px; } .enemy>.enemyMeters { top: 114px; } .teammate .portraitName { font-size: 8px; } .active>.portraitName { font-size: 10px; } }
+
+.detailSheet small { display: block; color: #b5d5ed; font-size: 11px; }.detailSheet > strong { display: none; }
+.detailSheet dl { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; font-size: 12px; }.detailSheet dl div { display: flex; justify-content: space-between; gap: 8px; }.detailSheet dd { margin: 0; }.detailSheet :is(p, dt, dd) { color: #e0edff; }.detailSheet p { font-size: 13px; line-height: 1.8; }.detailSheet p b { display: block; color: #91e5fa; }
+@media (max-height: 760px) { .stage { --stage-height: 225px; }.stageLabel { font-size: 17px; top: 12px; }.enemy>.portraitButton { height: 85px; }.enemy>.enemyMeters { top: 87px; }.floor { top: 82px; }.tray { height: 63px; }.damageLane { bottom: 78px; height: 36px; }.damage strong { font-size: 22px; }.skill { gap: 5px; padding: 6px; }.skill strong { font-size: 10px; }.teammate .portraitButton { width: 38px; }.teammate[data-appearance=ultimate] .portraitButton { height: 41px; }.active>.portraitButton { max-width: 105px; } }
+
+button.portraitName { padding: 0; border: 0; color: inherit; background: transparent; font-family: inherit; font-weight: 700; cursor: pointer; }
+button.portraitName:focus-visible { outline: 2px solid #e6ffff; outline-offset: 2px; }

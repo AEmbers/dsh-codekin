@@ -14,6 +14,7 @@ export declare const CreatureSprite: import("react").MemoExoticComponent<(props:
     size?: "tiny" | "small" | "medium" | "large";
     unknown?: boolean;
     eager?: boolean;
+    priority?: "high" | "auto";
     captured?: CreatureLook | undefined;
     level?: number | undefined;
     appearance?: CreatureAppearance | undefined;

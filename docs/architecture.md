@@ -60,6 +60,12 @@ The DSH adapter receives a runtime explicitly. It exposes state, actions, events
 
 The renderer loads content and state together. It parses the content response as untrusted JSON, bounds every collection, validates references and asset paths, freezes the accepted view, and derives its catalog, skills, starters, tower rotation, and image URLs from that view. Mechanics, aliases, and pack dependency internals are not sent to the browser.
 
+## Companion lounge
+
+Version `0.3.9-rc.1` adds an optional schema-3 `lounge` field: a selected creature instance and per-instance bond points, last award time and read chapters. Untouched legacy saves omit this field. The engine validates ownership, the ten-minute award interval and 5/20/50 unlock thresholds; clients cannot supply points or timestamps. Releasing a creature removes her lounge record, with selection falling back to an owned companion.
+
+Selection, interaction and reading use an isolated state branch that leaves combat, inventory and squad data unchanged and consumes no gameplay randomness. Authored text comes from optional creature `companion` profiles in the validated content view, with renderer-owned basic copy for creatures without a profile. Full animations are the first-open default; the browser persists explicit player motion preferences.
+
 ## Save compatibility
 
 The in-engine game state remains schema version `3`, preserving the `0.3.2` behavior contract. On disk it is wrapped in save format version `1`, which records the engine version and ordered content-pack identities. Existing raw `codekinsave/state.json` files and the older `tracewild/state.json` location are migrated automatically.

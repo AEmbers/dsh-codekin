@@ -113,6 +113,19 @@ export function parseCodekinContentView(value: unknown): CodekinContentView {
     }
     text(creature.combatRole, 80)
     text(creature.signatureProtocol, 128)
+    if (creature.companion !== undefined) {
+      const companion = record(creature.companion)
+      const localized = (value: unknown, maximum = 160): void => {
+        const row = record(value); text(row.zhCN, maximum); text(row.en, maximum)
+      }
+      localized(companion.greeting)
+      if (!Array.isArray(companion.lines) || companion.lines.length < 1 || companion.lines.length > 8
+        || !Array.isArray(companion.stories) || companion.stories.length !== 3) throw new TypeError('invalid content view')
+      companion.lines.forEach(line => { localized(line) })
+      companion.stories.forEach(value => {
+        const story = record(value); localized(story.title); localized(story.body, 2400)
+      })
+    }
     creatureSprites.set(id, text(creature.sprite, 128))
     if (typeof creature.baseCaptureRate !== 'number' || creature.baseCaptureRate <= 0 || creature.baseCaptureRate > 1) {
       throw new TypeError('invalid content view')
@@ -184,6 +197,7 @@ export function activateCodekinContent(value: CodekinContentView): void {
     signatureProtocol: row.signatureProtocol,
     spriteIndex: (row.number - 1) % TRACE_ECOLOGIES.length,
     stats: Object.freeze({ ...row.stats }),
+    ...(row.companion === undefined ? {} : { companion: row.companion }),
   }))
   const skills = view.skills.map(row => Object.freeze({
     creatureId: row.creatureId,

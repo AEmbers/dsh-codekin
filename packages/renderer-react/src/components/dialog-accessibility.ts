@@ -19,12 +19,13 @@ export interface DialogAccessibility<Element extends HTMLElement> {
 export function useDialogAccessibility<Element extends HTMLElement = HTMLElement>(
   dismiss?: () => void,
   dismissalBlocked = false,
+  restoreFocusTo?: HTMLElement | null,
 ): DialogAccessibility<Element> {
   const dialogRef = useRef<Element | null>(null)
   const returnFocusRef = useRef<HTMLElement | null>(
-    typeof document !== 'undefined' && document.activeElement instanceof HTMLElement
+    restoreFocusTo ?? (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement
       ? document.activeElement
-      : null,
+      : null),
   )
 
   useEffect(() => {

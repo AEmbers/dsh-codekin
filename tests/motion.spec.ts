@@ -54,7 +54,7 @@ describe('display physics and keyboard navigation', () => {
     expect(() => { saveUiPreferences({ reducedMotion: false }) }).not.toThrow()
   })
 
-  it('keeps missing or invalid motion preferences unset so the system remains the default', () => {
+  it('keeps missing or invalid preferences unset until the player makes a choice', () => {
     let value: string | null = null
     vi.stubGlobal('localStorage', { getItem: () => value, setItem: (_key: string, next: string) => { value = next } })
     for (const stored of [null, '{}', '{"reducedMotion":null}', '{"reducedMotion":"false"}', '{"reducedMotion":0}']) {
@@ -75,7 +75,7 @@ describe('display physics and keyboard navigation', () => {
 
   it.each([
     [undefined, false, false],
-    [undefined, true, true],
+    [undefined, true, false],
     [false, false, false],
     [false, true, false],
     [true, false, true],

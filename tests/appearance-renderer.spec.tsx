@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CORE_CODEKIN_RUNTIME, CORE_CONTENT_VIEW } from '../src/core-runtime.ts'
-import { APPEARANCE_MOTION, appearanceTransition, decodeCreatureImage, resolveCreatureSprite } from '../packages/renderer-react/src/appearance-presentation.ts'
+import { APPEARANCE_MOTION, appearanceTransition, decodeCreatureImage, isCreatureImageReady, resolveCreatureSprite } from '../packages/renderer-react/src/appearance-presentation.ts'
 import { activateCodekinContent } from '../packages/renderer-react/src/content.ts'
 import { CreatureSprite } from '../packages/renderer-react/src/components/creature-presentation.tsx'
 import { CreatureAppearancePicker, CreatureAppearancePortrait } from '../packages/renderer-react/src/components/CreatureAppearance.tsx'
@@ -142,9 +142,51 @@ describe('Codekin appearance presentation', () => {
     const loading = decodeCreatureImage('new.webp').then(value => { done = true; return value })
     await Promise.resolve()
     expect(done).toBe(false)
+    expect(isCreatureImageReady('new.webp')).toBe(false)
     finish!()
     expect(await loading).toBe(true)
+    expect(isCreatureImageReady('new.webp')).toBe(true)
     vi.stubGlobal('Image', class { decode() { return Promise.reject(new Error('missing image')) } })
     expect(await decodeCreatureImage('missing.webp')).toBe(false)
+    expect(isCreatureImageReady('missing.webp')).toBe(false)
+  })
+
+  it('shares preloads with foreground transitions, promotes priority, and retries failed images', async () => {
+    let finish: (() => void) | undefined
+    const pictures: DeferredImage[] = []
+    class DeferredImage {
+      fetchPriority = ''
+      constructor() { pictures.push(this) }
+      decode() { return new Promise<void>(resolve => { finish = resolve }) }
+    }
+    vi.stubGlobal('Image', DeferredImage)
+    const preload = decodeCreatureImage('shared-preload.webp', 'low')
+    const transition = decodeCreatureImage('shared-preload.webp')
+    expect(pictures).toHaveLength(1)
+    expect(pictures[0]!.fetchPriority).toBe('high')
+    finish!()
+    expect(await preload).toBe(true)
+    expect(await transition).toBe(true)
+    expect(await decodeCreatureImage('shared-preload.webp')).toBe(true)
+    expect(pictures).toHaveLength(1)
+
+    const decode = vi.fn().mockRejectedValueOnce(new Error('temporary failure')).mockResolvedValue(undefined)
+    vi.stubGlobal('Image', class { decode = decode })
+    expect(await decodeCreatureImage('retry-preload.webp')).toBe(false)
+    expect(await decodeCreatureImage('retry-preload.webp')).toBe(true)
+    expect(decode).toHaveBeenCalledTimes(2)
+  })
+
+  it('bounds retained portraits while keeping recently used images prepared', async () => {
+    const decode = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('Image', class { decode = decode })
+    for (let index = 0; index < 12; index += 1) await decodeCreatureImage(`bounded-${index}.webp`, 'low')
+    expect(decode).toHaveBeenCalledTimes(12)
+    expect(isCreatureImageReady('bounded-0.webp')).toBe(false)
+    expect(isCreatureImageReady('bounded-11.webp')).toBe(true)
+    await decodeCreatureImage('bounded-11.webp')
+    expect(decode).toHaveBeenCalledTimes(12)
+    await decodeCreatureImage('bounded-0.webp')
+    expect(decode).toHaveBeenCalledTimes(13)
   })
 })

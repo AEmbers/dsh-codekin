@@ -14,6 +14,7 @@ export declare function CreatureAppearancePicker(props: {
     t: Translate;
     busy: boolean;
     battleActive: boolean;
+    inDialog?: boolean;
     onSelect: (appearance: CreatureAppearance) => void;
     onClose: () => void;
 }): import("react/jsx-runtime").JSX.Element;

@@ -27,17 +27,45 @@ export function appearanceTransition(previous: PresentedAppearance, next: Presen
   return previous.level < threshold && next.level >= threshold && next.appearance !== 'original' ? 'evolution' : 'change'
 }
 
-/** Decode before swapping a visible portrait, retaining the old image on failure. */
-export async function decodeCreatureImage(source: string): Promise<boolean> {
+const preparedPictures = new Map<string, { picture: HTMLImageElement; loaded: Promise<boolean>; ready: boolean }>()
+const MAX_PREPARED_PICTURES = 8
+
+export function isCreatureImageReady(source: string | undefined): boolean {
+  return source !== undefined && preparedPictures.get(source)?.ready === true
+}
+
+/** Share pending work and retain a small decoded working set for portrait changes. */
+export function decodeCreatureImage(source: string, priority: 'high' | 'low' = 'high'): Promise<boolean> {
+  const prepared = preparedPictures.get(source)
+  if (prepared !== undefined) {
+    preparedPictures.delete(source)
+    preparedPictures.set(source, prepared)
+    if (priority === 'high') prepared.picture.fetchPriority = 'high'
+    return prepared.loaded
+  }
   const picture = new Image()
   picture.decoding = 'async'
+  picture.fetchPriority = priority
   const loaded = new Promise<boolean>(resolve => {
     picture.onload = () => { resolve(true) }
     picture.onerror = () => { resolve(false) }
   })
   picture.src = source
-  if (typeof picture.decode === 'function') {
-    try { await picture.decode(); return true } catch { return false }
+  const decoded = (async () => {
+    if (typeof picture.decode === 'function') {
+      try { await picture.decode(); return true } catch { return false }
+    }
+    return loaded
+  })().then(success => {
+    picture.onload = null; picture.onerror = null
+    entry.ready = success
+    if (!success && preparedPictures.get(source) === entry) preparedPictures.delete(source)
+    return success
+  })
+  const entry = { picture, loaded: decoded, ready: false }
+  preparedPictures.set(source, entry)
+  while (preparedPictures.size > MAX_PREPARED_PICTURES) {
+    preparedPictures.delete(preparedPictures.keys().next().value!)
   }
-  return loaded
+  return decoded
 }

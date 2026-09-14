@@ -311,6 +311,30 @@ async function dismissDshStartupDialogs(page: Page): Promise<void> {
   if (remaining.length > 0) throw new Error(`too many DSH startup dialogs: ${JSON.stringify(remaining)}`)
 }
 
+async function assertPanelDialog(page: Page): Promise<void> {
+  const popup = page.locator('[data-panel-dialog]')
+  await popup.waitFor({ state: 'visible' })
+  const result = await popup.evaluate(element => {
+    const window = element.closest('[data-codekin-ui]')!
+    const panel = window.getBoundingClientRect()
+    const insideWindow = (node: Element) => {
+      const bounds = node.getBoundingClientRect()
+      return bounds.left >= panel.left && bounds.top >= panel.top
+        && bounds.right <= panel.right && bounds.bottom <= panel.bottom
+    }
+    return {
+      contained: insideWindow(element) && insideWindow(element.closest('[data-panel-dialog-backdrop]')!),
+      backgroundInert: window.querySelector<HTMLElement>('[data-panel-dialog-background]')?.inert,
+      popupInert: element.closest('[inert]') !== null,
+      hostInert: window.closest('[inert]') !== null || document.body.inert,
+      color: getComputedStyle(element).color,
+    }
+  })
+  assert.deepEqual(result, {
+    contained: true, backgroundInert: true, popupInert: false, hostInert: false, color: 'rgb(234, 245, 255)',
+  }, 'dialogs stay within Codekin, isolate only its background, and retain readable colors under the DSH skin')
+}
+
 async function runBrowserSmoke(browserUrl: string): Promise<string> {
   const preferred = process.env.CODEKIN_BROWSER_CHANNEL
   const channels = [...new Set([preferred, 'chrome', 'msedge'].filter((value): value is string => value !== undefined))]
@@ -352,6 +376,36 @@ async function runBrowserSmoke(browserUrl: string): Promise<string> {
     await launcher.click()
     const app = page.getByRole('region', { name: /^(码灵|Codekin)$/i })
     await app.waitFor({ state: 'visible', timeout: 10_000 })
+    const hasLounge = await app.locator('[data-tab="lounge"]').count() > 0
+    if (hasLounge) {
+      await app.locator('main[data-page="lounge"]').waitFor({ state: 'visible' })
+      assert.equal(await app.getAttribute('data-motion'), 'full', 'first launch should play the full animation experience even with OS reduced motion')
+      const arrival = await app.locator('[data-companion-talk] > span').evaluate(element => ({
+        duration: parseFloat(getComputedStyle(element).animationDuration), name: getComputedStyle(element).animationName,
+      }))
+      assert.notEqual(arrival.name, 'none', 'the companion arrival animation must be styled and enabled')
+      assert.ok(arrival.duration >= 0.3, 'OS reduced motion must not silently shorten the first-open animation')
+      assert.match(await app.locator('[data-companion-points]').innerText(), /^0\s*\/\s*50$/)
+      assert.equal(await app.locator('[data-story-chapter]:disabled').count(), 3)
+      await app.locator('[data-companion-talk]').click()
+      await page.waitForFunction(() => document.querySelector('[data-companion-points]')?.textContent?.trim().startsWith('5'))
+      assert.equal(await app.locator('[data-story-chapter]:disabled').count(), 2)
+      await app.locator('[data-companion-talk]').click()
+      assert.match(await app.locator('[data-companion-points]').innerText(), /^5\s*\/\s*50$/, 'repeated taps must not bypass the bond cooldown')
+      await app.locator('[data-story-chapter="0"]').click()
+      await app.locator('#codekin-companion-story').waitFor({ state: 'visible' })
+      assert.match(await app.locator('#codekin-companion-story').innerText(), /索引团|Indeximp/)
+      if (await app.locator('[data-panel-dialog]#codekin-companion-story').count()) {
+        await assertPanelDialog(page)
+        await app.locator('#codekin-companion-story').press('Escape')
+        await app.locator('#codekin-companion-story').waitFor({ state: 'hidden' })
+        assert.equal(await app.locator('[data-story-chapter="0"]').evaluate(element => element === document.activeElement), true, 'closing a story restores its chapter button')
+      }
+      await app.getByRole('button', { name: /更换看板|Change companion/ }).click()
+      if (await app.locator('[data-panel-dialog]#codekin-companion-selection').count()) await assertPanelDialog(page)
+      await app.locator('[data-companion-choice]').first().click()
+      await app.locator('#codekin-companion-selection').waitFor({ state: 'hidden' })
+    }
     await app.getByRole('navigation').getByRole('button', { name: /^(码灵|Codekin)$/i }).click()
 
     const card = page.locator("main article button[aria-label*='码灵详情'], main article button[aria-label*='Codekin details']").first()
@@ -362,6 +416,17 @@ async function runBrowserSmoke(browserUrl: string): Promise<string> {
     await dialog.waitFor({ state: 'visible', timeout: 10_000 })
     const close = dialog.getByRole('button', { name: /关闭码灵详情|Close Codekin details/i })
     assert.equal(await close.evaluate(element => element === document.activeElement), true, 'detail close button should receive initial focus')
+    const growthButton = dialog.getByRole('button', { name: /^(码灵养成|Codekin growth) ↗$/ })
+    if (await growthButton.count()) {
+      await growthButton.click()
+      const growthDialog = app.locator('[data-panel-dialog]')
+      await growthDialog.waitFor({ state: 'visible' })
+      await assertPanelDialog(page)
+      await growthDialog.press('Escape')
+      await growthDialog.waitFor({ state: 'hidden' })
+      assert.equal(await dialog.isVisible(), true, 'Escape from growth must keep the parent creature details open')
+      assert.equal(await growthButton.evaluate(element => element === document.activeElement), true, 'nested dialog returns focus to its button')
+    }
     const focusable = dialog.locator([
       'button:not([disabled])',
       '[href]',
@@ -387,6 +452,7 @@ async function runBrowserSmoke(browserUrl: string): Promise<string> {
     const descending = app.getByRole('button', { name: /等级降序|Level descending/i })
     await descending.click()
     assert.equal(await descending.getAttribute('aria-pressed'), 'true', 'descending sort should expose its pressed state')
+    if (await app.locator('[data-panel-dialog]#codekin-roster-controls').count()) await app.locator('#codekin-roster-controls').press('Escape')
     await app.getByRole('button', { name: /调整编队|Edit squad/i }).click()
     const cancel = app.getByRole('button', { name: /^(取消|Cancel)$/i })
     await cancel.waitFor({ state: 'visible', timeout: 5_000 })
@@ -397,18 +463,62 @@ async function runBrowserSmoke(browserUrl: string): Promise<string> {
     assert.equal(await app.locator('main article').count(), 0, 'search should filter the roster')
     await app.getByRole('button', { name: /^(重置|Reset)$/i }).click()
     assert.equal(await app.locator('main article').count(), 1, 'reset should restore the starter card')
-    const navigation = app.getByRole('navigation')
+    const navigation = app.getByRole('navigation').filter({ has: page.locator('[data-tab]') })
     await navigation.locator('[aria-current="page"]').focus()
     await page.keyboard.press('ArrowRight')
     assert.equal(await navigation.locator('[data-tab="dex"]').getAttribute('aria-current'), 'page', 'arrow navigation should select the next page')
     assert.equal(await navigation.locator('button[tabindex="0"]').count(), 1, 'navigation has one tab stop')
-    assert.equal(await app.getAttribute('data-motion'), 'reduce', 'system reduced motion should be respected')
+    if (await app.locator('main nav[aria-label="翻页"], main nav[aria-label="Pagination"]').count()) {
+      for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
+        await page.setViewportSize(viewport)
+        for (const tabId of ['lounge', 'map', 'tower', 'squad', 'dex', 'inventory']) {
+          await navigation.locator(`[data-tab="${tabId}"]`).click()
+          const main = app.locator(`main[data-page="${tabId}"]`)
+          await main.waitFor({ state: 'visible' })
+          // Wait for the tab's slide animation before measuring its scroll extent.
+          await page.waitForTimeout(450)
+          const dimensions = await main.evaluate(element => ({
+            h: element.clientHeight, sh: element.scrollHeight, w: element.clientWidth, sw: element.scrollWidth,
+          }))
+          assert.ok(dimensions.sh <= dimensions.h + 1 && dimensions.sw <= dimensions.w + 1,
+            `${tabId} should fit the ${viewport.width}×${viewport.height} panel: ${JSON.stringify(dimensions)}`)
+        }
+      }
+      await page.setViewportSize({ width: 1280, height: 900 })
+    }
     const motionToggle = app.getByRole('button', { name: /^(减少动态效果|Reduce motion)$/i })
+    if (hasLounge) {
+      assert.equal(await app.getAttribute('data-motion'), 'full')
+      await motionToggle.click()
+      assert.equal(await app.getAttribute('data-motion'), 'reduce')
+      await page.reload({ waitUntil: 'domcontentloaded' })
+      await launcher.waitFor({ state: 'visible', timeout: 30_000 })
+      await dismissDshStartupDialogs(page)
+      await launcher.click()
+      await app.waitFor({ state: 'visible' })
+      assert.equal(await app.getAttribute('data-motion'), 'reduce', 'explicit reduced motion must survive a browser reload')
+      assert.equal(await motionToggle.getAttribute('aria-pressed'), 'true')
+      assert.match(await app.locator('[data-companion-points]').innerText(), /^5\s*\/\s*50$/, 'bond points must survive a browser reload')
+      assert.match(await app.locator('[data-story-chapter="0"]').innerText(), /已读|Read/)
+      assert.equal(await app.locator('[data-companion-talk] > span').evaluate(element => getComputedStyle(element).opacity), '1', 'reduced motion must not hide the portrait at its animation start')
+      assert.equal(await app.locator('[data-companion-talk] > span').evaluate(element => getComputedStyle(element).animationName), 'none')
+    } else {
+      // Retain checks for older, explicitly requested published packages.
+      assert.equal(await app.getAttribute('data-motion'), 'reduce')
+    }
     await motionToggle.click()
     assert.equal(await app.getAttribute('data-motion'), 'full', 'the player can explicitly enable full motion even when the OS reduces it')
     assert.equal(await motionToggle.getAttribute('aria-pressed'), 'false')
     assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('codekin.ui.v1') ?? '{}').reducedMotion), false,
       'the full motion choice should survive reloads')
+    if (hasLounge) {
+      await page.reload({ waitUntil: 'domcontentloaded' })
+      await launcher.waitFor({ state: 'visible', timeout: 30_000 })
+      await dismissDshStartupDialogs(page)
+      await launcher.click()
+      await app.waitFor({ state: 'visible' })
+      assert.equal(await app.getAttribute('data-motion'), 'full', 'explicit full motion must survive a browser reload')
+    }
     await app.getByRole('button', { name: /^(关闭|Close)$/i }).click()
     await launcher.waitFor({ state: 'visible', timeout: 5_000 })
     await page.waitForFunction(() => Boolean(document.activeElement?.getAttribute('aria-label')?.match(/打开码灵|Open Codekin/i)))
@@ -534,7 +644,9 @@ export async function runDshLifecycle(options: {
 
     server = await startDsh(dshVersion, env)
     active = server.child
-    assertPersistedState(await jsonRequest(server.port, `${API_PREFIX}/state`))
+    const restarted = await jsonRequest(server.port, `${API_PREFIX}/state`)
+    assertPersistedState(restarted)
+    assert.deepEqual(stateFrom(restarted).lounge, stateFrom(disabled).lounge, 'lounge progress must survive a host restart')
     await stopProcess(server.child)
     active = undefined
 
@@ -547,7 +659,9 @@ export async function runDshLifecycle(options: {
     await verifyDumpConfig(dshVersion, env)
     server = await startDsh(dshVersion, env)
     active = server.child
-    assertPersistedState(await jsonRequest(server.port, `${API_PREFIX}/state`))
+    const reinstalled = await jsonRequest(server.port, `${API_PREFIX}/state`)
+    assertPersistedState(reinstalled)
+    assert.deepEqual(stateFrom(reinstalled).lounge, stateFrom(disabled).lounge, 'lounge progress must survive a plugin reinstall')
     await stopProcess(server.child)
     active = undefined
 
@@ -598,7 +712,7 @@ export async function dshLifecycleCli(argv: readonly string[]): Promise<number> 
     else if (argument === '--skip-browser') browser = false
     else if (argument === '--json') json = true
     else if (argument === '--help' || argument === '-h') {
-      console.log('Usage: node tools/dsh-lifecycle.ts [--dsh-version 0.1.5-rc.1] [--with-dsh-web 0.3.20] [--source package-spec] [--skip-browser] [--keep] [--json] [--output report.json]')
+      console.log('Usage: node tools/dsh-lifecycle.ts [--dsh-version 0.1.5-rc.1] [--with-dsh-web 0.3.22] [--source package-spec] [--skip-browser] [--keep] [--json] [--output report.json]')
       return 0
     } else throw new TypeError(`unknown option ${argument}`)
   }

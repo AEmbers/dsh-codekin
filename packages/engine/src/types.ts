@@ -332,6 +332,17 @@ export interface TraceWildIdleState {
   lastReward?: TraceWildIdleReward
 }
 
+export interface CreatureBond {
+  points: number
+  lastInteractionAt?: number
+  readStories: number[]
+}
+
+export interface CompanionLounge {
+  selectedInstanceId?: string
+  bonds: Record<string, CreatureBond>
+}
+
 export interface TraceWildState {
   schemaVersion: 3
   revision: number
@@ -343,6 +354,8 @@ export interface TraceWildState {
   materials: Record<GrowthMaterialQuality, number>
   creatures: CapturedCreature[]
   squad: string[]
+  /** Optional for legacy saves; companion progress is cosmetic and per owned instance. */
+  lounge?: CompanionLounge
   dex: DexRecord[]
   encounters: WildEncounter[]
   battle?: BattleState
@@ -379,6 +392,9 @@ export type TraceWildAction =
   | { type: 'claim-idle-reward' }
   | { type: 'feed-material'; creatureInstanceId: string; quality: GrowthMaterialQuality; count: number }
   | { type: 'set-creature-appearance'; creatureInstanceId: string; appearance: CreatureAppearance }
+  | { type: 'set-companion'; creatureInstanceId: string }
+  | { type: 'interact-companion'; creatureInstanceId: string }
+  | { type: 'read-companion-story'; creatureInstanceId: string; chapter: number }
   | { type: 'release-creature'; creatureInstanceId: string }
   | { type: 'flee' }
   | { type: 'set-squad'; instanceIds: string[] }

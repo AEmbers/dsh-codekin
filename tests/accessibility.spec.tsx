@@ -8,6 +8,7 @@ import {
 } from '../packages/renderer-react/src/components/CodekinRosterView.tsx'
 import { activateCodekinContent } from '../packages/renderer-react/src/content.ts'
 import { zh } from '../packages/renderer-react/src/locales.ts'
+import { CompanionLounge } from '../packages/renderer-react/src/components/CompanionLounge.tsx'
 
 const t = ((key: keyof typeof zh, parameters?: Record<string, unknown>): string => {
   let value: string = zh[key]
@@ -29,6 +30,30 @@ function expectNamedButtons(markup: string): void {
 }
 
 describe('renderer accessibility semantics', () => {
+  it('exposes the companion portrait, bond progress and locked stories without leaking unread story text', () => {
+    activateCodekinContent(CORE_CONTENT_VIEW)
+    const state = CORE_CODEKIN_RUNTIME.createInitialTraceWildState(1_000)
+    const id = 'pet_companion_accessible_0001'
+    state.creatures = [{ instanceId: id, creatureId: 'relay-mesh-jelly', quality: 'origin', level: 60, xp: 0, wins: 0, caughtAt: 1_000, firstSignal: 'relay' }]
+    state.squad = [id]
+    const render = () => renderToStaticMarkup(<CompanionLounge state={state} serverTime={1_000} t={t} zh busy={false} reducedMotion act={async () => undefined} />)
+    const locked = render()
+    expect(locked).toContain('aria-label="和群星水母说说话"')
+    expect(locked).toContain('data-creature-appearance="ultimate"')
+    expect(locked).toContain('data-motion="reduce"')
+    expect(locked).toContain('data-paused="false"')
+    expect(locked).toContain('<progress aria-label="羁绊" value="0" max="50"')
+    expect([...locked.matchAll(/<button[^>]*disabled=""[^>]*data-story-chapter/g)]).toHaveLength(3)
+    expect(locked).not.toContain('你第一次走进休息室时')
+    expectNamedButtons(locked)
+    state.lounge = { selectedInstanceId: id, bonds: { [id]: { points: 20, readStories: [0] } } }
+    const unlocked = render()
+    expect([...unlocked.matchAll(/<button[^>]*disabled=""[^>]*data-story-chapter/g)]).toHaveLength(1)
+    expect(unlocked).toContain('已读')
+    expect(unlocked).toContain('未读')
+    expect(unlocked).not.toContain('你第一次走进休息室时')
+  })
+
   it('labels roster controls and every interactive Codekin card', () => {
     activateCodekinContent(CORE_CONTENT_VIEW)
     let state = CORE_CODEKIN_RUNTIME.createInitialTraceWildState(1_000)

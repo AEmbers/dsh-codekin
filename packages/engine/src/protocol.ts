@@ -74,6 +74,14 @@ export function normalizeTraceWildAction(value: unknown): TraceWildAction {
     case 'release-creature':
       exactKeys(row, ['type', 'creatureInstanceId'])
       return { type: 'release-creature', creatureInstanceId: safeId(row.creatureInstanceId, 'pet_') }
+    case 'set-companion':
+    case 'interact-companion':
+      exactKeys(row, ['type', 'creatureInstanceId'])
+      return { type: row.type, creatureInstanceId: safeId(row.creatureInstanceId, 'pet_') }
+    case 'read-companion-story':
+      exactKeys(row, ['type', 'creatureInstanceId', 'chapter'])
+      if (!Number.isInteger(row.chapter) || (row.chapter as number) < 0 || (row.chapter as number) > 2) throw new TypeError('invalid action')
+      return { type: 'read-companion-story', creatureInstanceId: safeId(row.creatureInstanceId, 'pet_'), chapter: row.chapter as number }
     case 'set-creature-appearance':
       exactKeys(row, ['type', 'creatureInstanceId', 'appearance'])
       if (row.appearance !== 'original' && row.appearance !== 'evolved' && row.appearance !== 'ultimate') throw new TypeError('invalid action')

@@ -1,4 +1,5 @@
 export * from './appearance.ts'
+export * from './companion.ts'
 export * from './balance.ts'
 export * from './content.ts'
 export * from './engine.ts'

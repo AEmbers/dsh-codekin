@@ -86,6 +86,29 @@ export const CONTENT_PACK_SCHEMA = {
           baseCaptureRate: { type: 'number', minimum: 0.001, maximum: 1 },
           signatureProtocol: { type: 'string', pattern: ID_PATTERN },
           sprite: { type: 'string', pattern: ID_PATTERN },
+          companion: {
+            type: 'object', additionalProperties: false, required: ['greeting', 'lines', 'stories'],
+            properties: {
+              greeting: localizedText,
+              lines: { type: 'array', minItems: 1, maxItems: 8, items: localizedText },
+              stories: {
+                type: 'array', minItems: 3, maxItems: 3,
+                items: {
+                  type: 'object', additionalProperties: false, required: ['title', 'body'],
+                  properties: {
+                    title: localizedText,
+                    body: {
+                      type: 'object', additionalProperties: false, required: ['zhCN', 'en'],
+                      properties: {
+                        zhCN: { type: 'string', minLength: 1, maxLength: 2400 },
+                        en: { type: 'string', minLength: 1, maxLength: 2400 },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
           stats: {
             type: 'object', additionalProperties: false,
             required: ['hp', 'attack', 'defense', 'speed'],

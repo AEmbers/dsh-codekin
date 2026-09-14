@@ -43,3 +43,5 @@
 @keyframes ferryDrift { to { transform: translate(13px, -4px); } }
 :global([data-motion=reduce]) .map *, :global([data-motion=reduce]) .map *::after { animation: none !important; transition: none !important; }
 @media (max-width: 390px) { .heading h2 { font-size: 26px; } .portrait { width: 43px; height: 43px; } .marker strong { font-size: 11px; padding: 3px 4px; } .marker small { font-size: 8px; } .coordinate { font-size: 7px; left: 12px; } .caption { display: none; } }
+
+@media (max-height: 760px) { .map { gap: 8px; }.scene { width: min(100%,calc((100dvh - 346px)*600/620)); justify-self: center; }.heading h2 { font-size: 24px; }.legend { gap: 5px 9px; }.hint { font-size: 10px; } }

@@ -31,7 +31,7 @@ Actual Codekin `0.3.7-rc.1` screens captured in an isolated demonstration profil
 
 ### Current release: Codekin `0.3.8-rc.1`
 
-This release targets **DSH `0.1.5-rc.1` + dsh-web `0.3.20`**. As of September 10, 2026, [dsh-web `0.3.20`](https://github.com/zhu1090093659/dsh-web/releases/tag/v0.3.20) has moved its SDK and [bundled desktop host](https://github.com/zhu1090093659/dsh-web/blob/v0.3.20/desktop/runtime/host/package.json) to DSH `0.1.5-rc.1`.
+The current verified pairing is **DSH `0.1.5-rc.1` + dsh-web `0.3.22`**. As of September 14, 2026, the latest [dsh-web `0.3.22`](https://github.com/zhu1090093659/dsh-web/releases/tag/v0.3.22) still pins its [bundled desktop host](https://github.com/zhu1090093659/dsh-web/blob/v0.3.22/desktop/runtime/host/package.json) to DSH `0.1.5-rc.1`. The published Codekin `0.3.8-rc.1` package passes the installed compatibility check with this pairing; existing users can keep their Codekin installation when upgrading dsh-web.
 
 `0.3.8-rc.1` aligns the host minimum and SDK dependencies, and handles Session V3 tool-result rewrites so history maintenance does not count again toward activity rewards. The game engine, content pack, and save format remain at the `0.3.7-rc.1` baseline; Codekin saves continue to use the same `DSH_HOME/codekinsave` directory.
 
@@ -55,14 +55,24 @@ The npm `latest` tag points to **`0.3.8-rc.1`**. npm and GitHub Release use the 
 
 | Codekin | DSH host | Distribution / status |
 | --- | --- | --- |
-| **`0.3.8-rc.1`** | **`0.1.5-rc.1`** | npm `latest` and current GitHub release; tested with dsh-web `0.3.20` |
+| **`0.3.8-rc.1`** | **`0.1.5-rc.1`** | npm `latest` and current GitHub release; tested with dsh-web `0.3.20` and `0.3.22` |
 | `0.3.7-rc.1` | `0.1.2-rc.1` | Previous npm / GitHub release; tested with dsh-web `0.3.17` |
 | `0.3.6-rc.1` | `0.1.2-rc.1` | Previous GitHub compatibility release |
 | `0.3.6-alpha.3` | `0.1.2-alpha.5` | Historical GitHub release |
 | `0.3.5-alpha.2` | `0.1.2-alpha.2` | Previous npm release; older content |
 | `0.2.0` | `0.1.0-rc.5` | Legacy package; source on `stable/0.2.x` |
 
-These are explicit version pairings; unlisted Alpha, RC, and stable versions need separate validation. Installed checks cover both standalone DSH `0.1.5-rc.1` and the combination with dsh-web `0.3.20`, including browser interactions and save preservation across restart, removal, and reinstall.
+These are explicit version pairings; unlisted Alpha, RC, and stable versions need separate validation. Installed checks cover both standalone DSH `0.1.5-rc.1` and the combinations with dsh-web `0.3.20` and `0.3.22`, including browser interactions and save preservation across restart, removal, and reinstall.
+
+## In development: `0.3.9-rc.1` companion lounge
+
+Overview pages prioritize fitting the default panel. Companion selection, bond rules, stories, creature stats and growth, inventory logs, and battle guidance open in dialogs; collections and long records use pagination. Dialogs and their backdrops stay inside and move with the Codekin window, with text colors independent of the DSH skin. Escape restores focus to their trigger, with scrolling retained as a fallback in small viewports.
+
+Not yet published to npm. Codekin opens on the lounge, where players can choose any owned companion and use her currently selected wardrobe appearance. Clicking her cycles through dialogue. Mesh Jelly has authored dialogue and three stories; other companions have basic shared lounge content.
+
+Each companion saves her own bond progress. An interaction grants five points once every ten minutes, unlocking stories at 5, 20, and 50 points, capped at 50. Additional taps still show dialogue. Bond only unlocks stories and does not change the squad, stats, or combat rewards. Stories can be reread, and read status is saved.
+
+First-time players receive the full animation experience. The upper-right Reduce motion control saves an explicit preference in the browser; updates preserve a previously saved reduced-motion choice.
 
 ## What's new in `0.3.8-rc.1`
 
@@ -120,7 +130,7 @@ pnpm check
 pnpm lifecycle:dsh
 ```
 
-`pnpm check` runs type checks, unit tests, content/asset validation, a fixed replay, a seven-scenario combat simulation, production builds, and performance budgets. CI covers Windows, macOS, and Ubuntu with Node.js 22 and 24. Installed lifecycle checks exercise authenticated browser interaction, keyboard focus, restart, uninstall/reinstall, and save preservation on DSH `0.1.5-rc.1`, both standalone and with dsh-web `0.3.20`.
+`pnpm check` runs type checks, unit tests, content/asset validation, a fixed replay, a seven-scenario combat simulation, production builds, and performance budgets. CI covers Windows, macOS, and Ubuntu with Node.js 22 and 24. Installed lifecycle checks exercise authenticated browser interaction, keyboard focus, restart, uninstall/reinstall, and save preservation on DSH `0.1.5-rc.1`, both standalone and with dsh-web `0.3.22`.
 
 Final game artwork and public gameplay screenshots are included in the repository. Internal evolution comparison galleries, references, source masters, prompts, and test saves remain outside the repository and release package.
 

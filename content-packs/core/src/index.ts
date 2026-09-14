@@ -8,6 +8,7 @@ import {
 } from './catalog.ts'
 import { CREATURE_SKILLS } from './skills.ts'
 import { CORE_CREATURE_MECHANICS } from './mechanics.ts'
+import { CORE_COMPANIONS } from './companions.ts'
 
 export * from './catalog.ts'
 export * from './skills.ts'
@@ -40,8 +41,8 @@ const QUALITY_NAMES = {
 export const CORE_CONTENT_PACK = defineContentPack({
   manifest: {
     id: '@nath-vikky/codekin-core',
-    version: '0.3.7-rc.1',
-    engine: '>=0.3.2 <0.4.0',
+    version: '0.3.9-rc.1',
+    engine: '>=0.3.9-rc.1 <0.4.0',
     contentApi: 1,
   },
   ecologies: TRACE_ECOLOGIES.map((id, order) => ({
@@ -62,6 +63,7 @@ export const CORE_CONTENT_PACK = defineContentPack({
     signatureProtocol: creature.signatureProtocol,
     sprite: `creature:${creature.id}:sprite`,
     stats: creature.stats,
+    ...(CORE_COMPANIONS[creature.id] === undefined ? {} : { companion: CORE_COMPANIONS[creature.id]! }),
   })),
   skills: CREATURE_SKILLS.map(skill => ({
     creatureId: skill.creatureId,
