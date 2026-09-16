@@ -2176,6 +2176,7 @@ function BattleView(props: {
                 aria-rowcount={MATCH_BOARD_SIZE}
                 aria-colcount={MATCH_BOARD_SIZE}
                 aria-busy={boardLocked}
+                data-turn-owner={battle.turnOwner}
                 onFocusCapture={() => { boardHadFocus.current = true }}
                 onBlurCapture={event => { if (event.relatedTarget !== null && !event.currentTarget.contains(event.relatedTarget as Node)) boardHadFocus.current = false }}
               >

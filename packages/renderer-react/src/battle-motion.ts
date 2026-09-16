@@ -3,7 +3,7 @@ export const BATTLE_MOTION = {
   swap: 140,
   return: 200,
   clear: 300,
-  fallBase: 220,
+  fallBase: 70,
   fallPerRow: 54,
   fallStagger: 12,
   chainPause: 140,

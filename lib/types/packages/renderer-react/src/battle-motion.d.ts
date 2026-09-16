@@ -3,7 +3,7 @@ export declare const BATTLE_MOTION: {
     readonly swap: 140;
     readonly return: 200;
     readonly clear: 300;
-    readonly fallBase: 220;
+    readonly fallBase: 70;
     readonly fallPerRow: 54;
     readonly fallStagger: 12;
     readonly chainPause: 140;
