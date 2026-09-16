@@ -486,10 +486,27 @@ async function runBrowserSmoke(browserUrl: string): Promise<string> {
       }
       await page.setViewportSize({ width: 1280, height: 900 })
     }
-    const motionToggle = app.getByRole('button', { name: /^(减少动态效果|Reduce motion)$/i })
+    const settingsTrigger = app.getByRole('button', { name: /^(设置|Settings)$/i })
+    const hasSettingsDialog = await settingsTrigger.count() > 0
+    async function motionControl(reduced: boolean, change: boolean): Promise<void> {
+      if (hasSettingsDialog) {
+        await settingsTrigger.click()
+        const settings = app.locator('#codekin-settings')
+        await settings.getByRole('button', { name: /^(体验|Experience)$/i }).click()
+        const toggle = settings.getByRole('switch', { name: /^(完整动画|Full animations)$/i })
+        if (change) await toggle.click()
+        assert.equal(await toggle.getAttribute('aria-checked'), String(!reduced))
+        await settings.getByRole('button', { name: /^(关闭设置|Close settings)$/i }).click()
+      } else {
+        // Older published clients keep the control directly in their header.
+        const toggle = app.getByRole('button', { name: /^(减少动态效果|Reduce motion)$/i })
+        if (change) await toggle.click()
+        assert.equal(await toggle.getAttribute('aria-pressed'), String(reduced))
+      }
+    }
     if (hasLounge) {
       assert.equal(await app.getAttribute('data-motion'), 'full')
-      await motionToggle.click()
+      await motionControl(true, true)
       assert.equal(await app.getAttribute('data-motion'), 'reduce')
       await page.reload({ waitUntil: 'domcontentloaded' })
       await launcher.waitFor({ state: 'visible', timeout: 30_000 })
@@ -497,7 +514,7 @@ async function runBrowserSmoke(browserUrl: string): Promise<string> {
       await launcher.click()
       await app.waitFor({ state: 'visible' })
       assert.equal(await app.getAttribute('data-motion'), 'reduce', 'explicit reduced motion must survive a browser reload')
-      assert.equal(await motionToggle.getAttribute('aria-pressed'), 'true')
+      await motionControl(true, false)
       assert.match(await app.locator('[data-companion-points]').innerText(), /^5\s*\/\s*50$/, 'bond points must survive a browser reload')
       assert.match(await app.locator('[data-story-chapter="0"]').innerText(), /已读|Read/)
       assert.equal(await app.locator('[data-companion-talk] > span').evaluate(element => getComputedStyle(element).opacity), '1', 'reduced motion must not hide the portrait at its animation start')
@@ -506,9 +523,8 @@ async function runBrowserSmoke(browserUrl: string): Promise<string> {
       // Retain checks for older, explicitly requested published packages.
       assert.equal(await app.getAttribute('data-motion'), 'reduce')
     }
-    await motionToggle.click()
+    await motionControl(false, true)
     assert.equal(await app.getAttribute('data-motion'), 'full', 'the player can explicitly enable full motion even when the OS reduces it')
-    assert.equal(await motionToggle.getAttribute('aria-pressed'), 'false')
     assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('codekin.ui.v1') ?? '{}').reducedMotion), false,
       'the full motion choice should survive reloads')
     if (hasLounge) {
@@ -712,7 +728,7 @@ export async function dshLifecycleCli(argv: readonly string[]): Promise<number> 
     else if (argument === '--skip-browser') browser = false
     else if (argument === '--json') json = true
     else if (argument === '--help' || argument === '-h') {
-      console.log('Usage: node tools/dsh-lifecycle.ts [--dsh-version 0.1.5-rc.1] [--with-dsh-web 0.3.22] [--source package-spec] [--skip-browser] [--keep] [--json] [--output report.json]')
+      console.log('Usage: node tools/dsh-lifecycle.ts [--dsh-version 0.1.5-rc.1] [--with-dsh-web 0.3.23] [--source package-spec] [--skip-browser] [--keep] [--json] [--output report.json]')
       return 0
     } else throw new TypeError(`unknown option ${argument}`)
   }

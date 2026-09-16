@@ -6,7 +6,7 @@
   "contentRegistryP95Ms": 10,
   "simulationMatrixMs": 8000,
   "clientBundleBytes": 400000,
-  "clientBundleGzipBytes": 90000,
+  "clientBundleGzipBytes": 95000,
   "shippedJavaScriptBytes": 800000,
   "coreAssetBytes": 4000000,
   "largeRosterJsonBytes": 500000

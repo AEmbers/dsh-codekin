@@ -50,16 +50,20 @@ pnpm performance -- --check --output performance-report.json
 
 The `codekin-performance-v1` report measures a typical authoritative battle action, a 750-Codekin restore, content-registry construction, the fixed simulation matrix, browser and total JavaScript bundles, core assets, and large-roster JSON size. Cross-platform release ceilings live in `performance-budget.json`; timing gates use p95 samples and intentionally leave headroom for shared CI hosts.
 
+The in-window settings feature adds approximately 4 KB gzip to the 89.37 KB graphic-UI client for bilingual controls, preference persistence and the settings dialog. Its compressed-client ceiling is 95,000 bytes; the 400,000-byte raw-client ceiling and all engine, image and save budgets remain unchanged. Settings add no dependencies or image downloads.
+
 The core image budget is 4 MB for the launcher, 25 original sprites, 25 transparent 768px evolution portraits, and five ultimate scene/silhouette pairs. Appearance images use WebP with preserved alpha. Ultimate scenes retain the character's themed environment while removing the outer paper background; separate alpha masks keep the charged battle glow on the character outline. Review galleries, source masters, and processing prompts remain outside the repository and package. Appearance changes do not add gameplay random draws or alter combat values.
 
 ## Installed DSH lifecycle
 
 ```sh
 pnpm lifecycle:dsh
-pnpm lifecycle:dsh --with-dsh-web 0.3.22
+pnpm lifecycle:dsh --with-dsh-web 0.3.23
 ```
 
-This release gate creates an isolated DSH Web `0.1.5-rc.1` profile, installs a local package tarball, starts the host, exercises the state and action routes, runs a headless Chrome/Edge roster and keyboard-accessibility smoke test, disables Codekin, restarts DSH, removes and reinstalls the plugin, and verifies that the same save and starter survive every transition. `--with-dsh-web 0.3.22` first installs and verifies that exact aggregate version, then runs the same lifecycle with both plugins present. CI uses this combined path for tarballs and the standalone path for Git sources. Pass `--source <package-spec>` to test a Git commit, release tarball, or registry package through the same path. Failed runs retain their temporary profile for diagnosis; successful runs remove it unless `--keep` is supplied. `--skip-browser` is available for host-only diagnosis but is not used by the release gate.
+This release gate creates an isolated DSH Web `0.1.5-rc.1` profile, installs a local package tarball, starts the host, exercises the state and action routes, runs a headless Chrome/Edge roster and keyboard-accessibility smoke test, disables Codekin, restarts DSH, removes and reinstalls the plugin, and verifies that the same save and starter survive every transition. `--with-dsh-web 0.3.23` first installs and verifies that exact aggregate version, then runs the same lifecycle with both plugins present. CI uses this combined path for tarballs and the standalone path for Git sources. Pass `--source <package-spec>` to test a Git commit, release tarball, or registry package through the same path. Failed runs retain their temporary profile for diagnosis; successful runs remove it unless `--keep` is supplied. `--skip-browser` is available for host-only diagnosis but is not used by the release gate.
+
+The September 16, 2026 release targets dsh-web `0.3.23`, whose [desktop host manifest](https://github.com/zhu1090093659/dsh-web/blob/v0.3.23/desktop/runtime/host/package.json) still pins DSH `0.1.5-rc.1`. Codekin's minimum and SDK baseline therefore stay at that version. Settings are tested through the in-window dialog; older published clients retain their header motion control in the same smoke test.
 
 The September 14, 2026 compatibility check also installs the already-published package directly:
 

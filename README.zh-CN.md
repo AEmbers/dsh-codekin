@@ -6,15 +6,22 @@
 
 ## 实机预览
 
-以下画面截自码灵 `0.3.7-rc.1` 的独立演示存档，运行于 DSH `0.1.2-rc.1`，同时安装了 `dsh-web 0.3.17`。
+以下画面截自码灵 `0.3.9-rc.1` 的独立演示存档，运行于 DSH `0.1.5-rc.1`，同时安装了 `dsh-web 0.3.23`。演示队伍包含已解锁的外观；新存档仍从初始伙伴与正常养成进度开始。
 
 <p align="center">
-  <img src=".github/readme/codekin-battle.webp" alt="完全体战斗界面：上半身聚焦立绘与排队队友头像" width="31%">
-  <img src=".github/readme/codekin-detail.webp" alt="60 级群星水母完全体详情，保留主题场景并去除外围底色" width="31%">
-  <img src=".github/readme/codekin-wardrobe.webp" alt="衣架外观选择：原形、进化形与完全体" width="31%">
+  <img src=".github/readme/codekin-lounge.webp" alt="群星水母休息室：点击台词、羁绊进度与三段故事" width="31%">
+  <img src=".github/readme/codekin-battle.webp" alt="拼贴风格战斗 HUD、完全体立绘与 8×8 棋盘" width="31%">
+  <img src=".github/readme/codekin-settings.webp" alt="独立设置弹窗：中英文切换、默认页面和位置控制" width="31%">
 </p>
 
-<p align="center"><sub>完全体战斗立绘 · 全景详情展示 · 三阶段外观选择</sub></p>
+<p align="center"><sub>休息室与羁绊 · 战斗界面 · 独立设置</sub></p>
+
+<p align="center">
+  <img src=".github/readme/codekin-detail.webp" alt="60 级群星水母详情，保留主题场景并去除外围底色" width="46%">
+  <img src=".github/readme/codekin-wardrobe.webp" alt="衣架外观选择：原形、进化形与完全体" width="46%">
+</p>
+
+<p align="center"><sub>码灵详情 · 三阶段外观选择</sub></p>
 
 <p align="center">
   <img src=".github/readme/codekin-roster.webp" alt="包含等级、品质和出战标识的码灵列表" width="46%">
@@ -29,50 +36,55 @@
 
 ## 安装与启用
 
-### 当前版本：码灵 `0.3.8-rc.1`
+### 当前版本：码灵 `0.3.9-rc.1`
 
-当前已验证的组合是 **DSH `0.1.5-rc.1` + dsh-web `0.3.22`**。截至 2026 年 9 月 14 日，最新版 [dsh-web `0.3.22`](https://github.com/zhu1090093659/dsh-web/releases/tag/v0.3.22) 的[桌面内置宿主](https://github.com/zhu1090093659/dsh-web/blob/v0.3.22/desktop/runtime/host/package.json)仍固定为 DSH `0.1.5-rc.1`。已发布的码灵 `0.3.8-rc.1` 通过此组合的实装兼容检查，升级 dsh-web 时可以继续使用现有的码灵安装。
+当前已验证的组合是 **DSH `0.1.5-rc.1` + dsh-web `0.3.23`**。截至 2026 年 9 月 16 日，最新版 [dsh-web `0.3.23`](https://github.com/zhu1090093659/dsh-web/releases/tag/v0.3.23) 的[桌面内置宿主](https://github.com/zhu1090093659/dsh-web/blob/v0.3.23/desktop/runtime/host/package.json)仍固定为 DSH `0.1.5-rc.1`。码灵据此保留宿主最低版本与 SDK 基线，并验证该组合的安装、浏览器操作和存档保留。
 
-`0.3.8-rc.1` 同步了宿主最低版本与 SDK 依赖，并适配 Session V3 的工具结果重写，避免历史整理被重复计入会话奖励。游戏引擎、内容包和存档格式沿用 `0.3.7-rc.1`；码灵存档继续保存在同一 `DSH_HOME/codekinsave` 目录。
+`0.3.9-rc.1` 加入休息室、羁绊故事、独立双语设置、拼贴风格 UI 和立绘加载改进。存档继续保存在同一 `DSH_HOME/codekinsave` 目录；休息室进度通过 schema 3 的可选字段保存，升级保留已有队伍、资源和外观选择。
 
 通过 npm 安装，并明确指定版本：
 
 ```sh
-pnpm dlx @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add @nath-vikky/dsh-codekin@0.3.8-rc.1
+pnpm dlx @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add @nath-vikky/dsh-codekin@0.3.9-rc.1
 ```
 
 同一版本也可通过 GitHub Release 安装包安装：
 
 ```sh
-pnpm dlx @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add --ignore-scripts https://github.com/Nath-Vikky/dsh-codekin/releases/download/v0.3.8-rc.1/nath-vikky-dsh-codekin-0.3.8-rc.1.tgz
+pnpm dlx @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add --ignore-scripts https://github.com/Nath-Vikky/dsh-codekin/releases/download/v0.3.9-rc.1/nath-vikky-dsh-codekin-0.3.9-rc.1.tgz
 ```
 
 执行命令时，请沿用现有 DSH 的 `DSH_HOME`，以更新正确的 Profile。安装后重启 DSH Web，在 **DSH 设置 → 码灵** 中启用。可拖动的入口会打开竖屏游戏窗口；挂机补给可领取时，入口会变成礼盒提醒。
 
-npm `latest` 指向 **`0.3.8-rc.1`**。npm 与 GitHub Release 使用同一份安装包。发布标签与活跃开发分支均包含经过检查的运行时 Bundle，支持源码安装。
+npm `latest` 指向 **`0.3.9-rc.1`**。npm 与 GitHub Release 使用同一份安装包。发布标签与活跃开发分支均包含经过检查的运行时 Bundle，支持源码安装。
 
 ### 版本对应关系
 
 | 码灵 | DSH 宿主 | 分发与状态 |
 | --- | --- | --- |
-| **`0.3.8-rc.1`** | **`0.1.5-rc.1`** | npm `latest` 与当前 GitHub 版本；已验证 dsh-web `0.3.20` 和 `0.3.22` 组合 |
+| **`0.3.9-rc.1`** | **`0.1.5-rc.1`** | npm `latest` 与当前 GitHub 版本；已验证 dsh-web `0.3.23` 组合 |
+| `0.3.8-rc.1` | `0.1.5-rc.1` | 上一版 npm / GitHub 版本；已验证 dsh-web `0.3.20` 和 `0.3.22` 组合 |
 | `0.3.7-rc.1` | `0.1.2-rc.1` | 上一版 npm / GitHub 版本；已验证 dsh-web `0.3.17` 组合 |
 | `0.3.6-rc.1` | `0.1.2-rc.1` | 上一版 GitHub 兼容版本 |
 | `0.3.6-alpha.3` | `0.1.2-alpha.5` | 历史 GitHub 版本 |
 | `0.3.5-alpha.2` | `0.1.2-alpha.2` | 上一版 npm 包，内容较旧 |
 | `0.2.0` | `0.1.0-rc.5` | 旧版；源码保留在 `stable/0.2.x` |
 
-以上是明确的版本配对；未列出的 Alpha、RC 和正式版需要独立验证。实装检查同时覆盖官方 DSH `0.1.5-rc.1` 和安装 dsh-web `0.3.20`、`0.3.22` 的组合，包括界面操作、重启与卸载重装后的存档保留。
+以上是明确的版本配对；未列出的 Alpha、RC 和正式版需要独立验证。本版实装检查覆盖官方 DSH `0.1.5-rc.1` 和安装 dsh-web `0.3.23` 的组合，包括界面操作、重启与卸载重装后的存档保留。
 
-## 开发中：`0.3.9-rc.1` 休息室
+## `0.3.9-rc.1` 更新内容
+
+界面采用深蓝底色、紫色网格、切角边框与荧光黄绿强调色。立绘加载针对翻页、切换和缓存复用进行了改进。色块下落缩短 0.15 秒；自身回合结算时棋盘保持明亮，同时暂停交换输入。
 
 界面优先在默认面板内一屏显示：看板选择、羁绊说明、故事阅读、码灵数值与养成、仓库记录和战斗说明均通过按钮打开弹窗；码灵、图鉴与长记录采用翻页。弹窗及遮罩限定在码灵窗口内，随窗口定位，文字配色独立于 DSH 皮肤；支持 Esc 关闭并返回原按钮，较小视口保留必要的滚动兜底。
 
-此功能尚未发布到 npm。首次进入默认打开休息室，可从已拥有的码灵中选择看板，并沿用详情页衣架中选定的外观。点击她可切换台词；群星水母包含专属台词和三段故事，其余码灵提供基础陪伴内容。
+首次进入默认打开休息室，可从已拥有的码灵中选择看板，并沿用详情页衣架中选定的外观。点击她可切换台词；群星水母包含专属台词和三段故事，其余码灵提供基础陪伴内容。
 
 羁绊按每只码灵独立保存，每隔 10 分钟互动增加 5 点，在 5、20、50 点分别解锁一段故事，满值为 50。连续点击仍可对话；羁绊仅解锁故事，不影响编队、属性和战斗奖励。故事可重复阅读，已读状态会保存。
 
-首次安装并打开默认播放完整动画。右上角的“减少动态效果”可以手动切换，浏览器会记住明确的选择；升级不会覆盖已保存的减少动态效果设置。
+右上角醒目的「设置」按钮在连接中或离线时也可打开，弹窗限定在码灵窗口内。界面、体验、帮助三页提供独立中英文切换（也可跟随 DSH）、默认打开页面、位置锁定、窗口与入口归位、完整动画、粒子、遭遇提醒及玩法暂停。帮助页提供 GitHub 仓库和 Issue 反馈链接。界面偏好保存在当前浏览器，游戏进度仍由本机 Host 保存。
+
+首次安装并打开默认播放完整动画。可在「设置 → 体验」关闭完整动画；升级会保留此前明确选择的减少动态效果。暂停玩法会保留存档；关闭窗口后可从 DSH 设置 → 码灵重新启用。
 
 ## `0.3.8-rc.1` 更新内容
 
@@ -130,7 +142,7 @@ pnpm check
 pnpm lifecycle:dsh
 ```
 
-`pnpm check` 覆盖类型检查、单元测试、内容与资源校验、固定回放、七场景战斗模拟、生产构建和性能预算。CI 配置覆盖 Windows、macOS、Ubuntu 的 Node.js 22/24。安装生命周期在 DSH `0.1.5-rc.1` 中验证带认证的浏览器交互、键盘焦点、重启、卸载重装与存档保留，同时覆盖官方 DSH 和安装 dsh-web `0.3.22` 的组合。
+`pnpm check` 覆盖类型检查、单元测试、内容与资源校验、固定回放、七场景战斗模拟、生产构建和性能预算。CI 配置覆盖 Windows、macOS、Ubuntu 的 Node.js 22/24。安装生命周期在 DSH `0.1.5-rc.1` 中验证带认证的浏览器交互、键盘焦点、重启、卸载重装与存档保留，同时覆盖官方 DSH 和安装 dsh-web `0.3.23` 的组合。
 
 仓库包含最终游戏素材与公开的实机截图。内部进化对照图册、参考图、源文件、提示词与测试存档均保留在仓库及发行包之外。
 

@@ -6,15 +6,22 @@ Codekin is a creature-collection and match-three battle plugin for DeepSeek Harn
 
 ## In-game preview
 
-Actual Codekin `0.3.7-rc.1` screens captured in an isolated demonstration profile on DSH `0.1.2-rc.1`, with `dsh-web 0.3.17` installed.
+Actual Codekin `0.3.9-rc.1` screens captured in an isolated demonstration profile on DSH `0.1.5-rc.1`, with `dsh-web 0.3.23` installed. The demonstration roster includes unlocked appearances; new saves start with the normal starter and progression.
 
 <p align="center">
-  <img src=".github/readme/codekin-battle.webp" alt="Battle with upper-body ultimate artwork and face portraits for queued teammates" width="31%">
-  <img src=".github/readme/codekin-detail.webp" alt="Level-60 Mesh Jelly ultimate appearance with a transparent themed scene" width="31%">
-  <img src=".github/readme/codekin-wardrobe.webp" alt="Wardrobe offering original, evolved, and ultimate appearances" width="31%">
+  <img src=".github/readme/codekin-lounge.webp" alt="Companion lounge with Mesh Jelly, dialogue, bond progress and three stories" width="31%">
+  <img src=".github/readme/codekin-battle.webp" alt="Graphic battle HUD with ultimate portraits and an 8 by 8 board" width="31%">
+  <img src=".github/readme/codekin-settings.webp" alt="In-window settings with Chinese and English language selection and interface controls" width="31%">
 </p>
 
-<p align="center"><sub>Ultimate battle portraits · full-scene character details · three appearance choices</sub></p>
+<p align="center"><sub>Companion lounge · graphic battle HUD · independent settings</sub></p>
+
+<p align="center">
+  <img src=".github/readme/codekin-detail.webp" alt="Level-60 Mesh Jelly character details with a transparent themed scene" width="46%">
+  <img src=".github/readme/codekin-wardrobe.webp" alt="Wardrobe offering original, evolved and ultimate appearances" width="46%">
+</p>
+
+<p align="center"><sub>Character details · three appearance choices</sub></p>
 
 <p align="center">
   <img src=".github/readme/codekin-roster.webp" alt="Owned Codekin roster with levels, qualities, and deployed slots" width="46%">
@@ -29,50 +36,55 @@ Actual Codekin `0.3.7-rc.1` screens captured in an isolated demonstration profil
 
 ## Install and enable
 
-### Current release: Codekin `0.3.8-rc.1`
+### Current release: Codekin `0.3.9-rc.1`
 
-The current verified pairing is **DSH `0.1.5-rc.1` + dsh-web `0.3.22`**. As of September 14, 2026, the latest [dsh-web `0.3.22`](https://github.com/zhu1090093659/dsh-web/releases/tag/v0.3.22) still pins its [bundled desktop host](https://github.com/zhu1090093659/dsh-web/blob/v0.3.22/desktop/runtime/host/package.json) to DSH `0.1.5-rc.1`. The published Codekin `0.3.8-rc.1` package passes the installed compatibility check with this pairing; existing users can keep their Codekin installation when upgrading dsh-web.
+The current verified pairing is **DSH `0.1.5-rc.1` + dsh-web `0.3.23`**. As of September 16, 2026, the latest [dsh-web `0.3.23`](https://github.com/zhu1090093659/dsh-web/releases/tag/v0.3.23) still pins its [bundled desktop host](https://github.com/zhu1090093659/dsh-web/blob/v0.3.23/desktop/runtime/host/package.json) to DSH `0.1.5-rc.1`. Codekin keeps this host minimum and SDK baseline, with installation, browser interaction and save-preservation checks against that pairing.
 
-`0.3.8-rc.1` aligns the host minimum and SDK dependencies, and handles Session V3 tool-result rewrites so history maintenance does not count again toward activity rewards. The game engine, content pack, and save format remain at the `0.3.7-rc.1` baseline; Codekin saves continue to use the same `DSH_HOME/codekinsave` directory.
+`0.3.9-rc.1` adds the companion lounge, bond stories, independent bilingual settings, a graphic UI theme and portrait-loading improvements. Existing saves remain in the same `DSH_HOME/codekinsave` directory; optional lounge progress extends schema 3 without resetting the roster, resources or appearance choices.
 
 Install from npm with explicit versions:
 
 ```sh
-pnpm dlx @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add @nath-vikky/dsh-codekin@0.3.8-rc.1
+pnpm dlx @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add @nath-vikky/dsh-codekin@0.3.9-rc.1
 ```
 
 The same release is also available as a GitHub Release tarball:
 
 ```sh
-pnpm dlx @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add --ignore-scripts https://github.com/Nath-Vikky/dsh-codekin/releases/download/v0.3.8-rc.1/nath-vikky-dsh-codekin-0.3.8-rc.1.tgz
+pnpm dlx @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add --ignore-scripts https://github.com/Nath-Vikky/dsh-codekin/releases/download/v0.3.9-rc.1/nath-vikky-dsh-codekin-0.3.9-rc.1.tgz
 ```
 
 Use the same `DSH_HOME` as your existing DSH installation so the command updates the intended profile. Restart DSH Web, then enable **DSH Settings → Codekin**. The draggable launcher opens the portrait game window and becomes a gift reminder when idle supplies are ready.
 
-The npm `latest` tag points to **`0.3.8-rc.1`**. npm and GitHub Release use the same package archive. Release tags and active development branches include reviewed runtime bundles for source installs.
+The npm `latest` tag points to **`0.3.9-rc.1`**. npm and GitHub Release use the same package archive. Release tags and active development branches include reviewed runtime bundles for source installs.
 
 ### Version pairings
 
 | Codekin | DSH host | Distribution / status |
 | --- | --- | --- |
-| **`0.3.8-rc.1`** | **`0.1.5-rc.1`** | npm `latest` and current GitHub release; tested with dsh-web `0.3.20` and `0.3.22` |
+| **`0.3.9-rc.1`** | **`0.1.5-rc.1`** | npm `latest` and current GitHub release; tested with dsh-web `0.3.23` |
+| `0.3.8-rc.1` | `0.1.5-rc.1` | Previous npm / GitHub release; tested with dsh-web `0.3.20` and `0.3.22` |
 | `0.3.7-rc.1` | `0.1.2-rc.1` | Previous npm / GitHub release; tested with dsh-web `0.3.17` |
 | `0.3.6-rc.1` | `0.1.2-rc.1` | Previous GitHub compatibility release |
 | `0.3.6-alpha.3` | `0.1.2-alpha.5` | Historical GitHub release |
 | `0.3.5-alpha.2` | `0.1.2-alpha.2` | Previous npm release; older content |
 | `0.2.0` | `0.1.0-rc.5` | Legacy package; source on `stable/0.2.x` |
 
-These are explicit version pairings; unlisted Alpha, RC, and stable versions need separate validation. Installed checks cover both standalone DSH `0.1.5-rc.1` and the combinations with dsh-web `0.3.20` and `0.3.22`, including browser interactions and save preservation across restart, removal, and reinstall.
+These are explicit version pairings; unlisted Alpha, RC, and stable versions need separate validation. This release's installed checks cover standalone DSH `0.1.5-rc.1` and its pairing with dsh-web `0.3.23`, including browser interactions and save preservation across restart, removal and reinstall.
 
-## In development: `0.3.9-rc.1` companion lounge
+## What's new in `0.3.9-rc.1`
+
+The UI now combines navy and blue panels with purple mesh accents, angular frames and lime highlights. Portrait loading handles page changes and cached images more reliably. Tile falls are 0.15 seconds faster; resolving the player's move keeps the board bright while blocking further input.
 
 Overview pages prioritize fitting the default panel. Companion selection, bond rules, stories, creature stats and growth, inventory logs, and battle guidance open in dialogs; collections and long records use pagination. Dialogs and their backdrops stay inside and move with the Codekin window, with text colors independent of the DSH skin. Escape restores focus to their trigger, with scrolling retained as a fallback in small viewports.
 
-Not yet published to npm. Codekin opens on the lounge, where players can choose any owned companion and use her currently selected wardrobe appearance. Clicking her cycles through dialogue. Mesh Jelly has authored dialogue and three stories; other companions have basic shared lounge content.
+Codekin opens on the lounge by default, where players can choose any owned companion and use her currently selected wardrobe appearance. Clicking her cycles through dialogue. Mesh Jelly has authored dialogue and three stories; other companions have basic shared lounge content.
 
 Each companion saves her own bond progress. An interaction grants five points once every ten minutes, unlocking stories at 5, 20, and 50 points, capped at 50. Additional taps still show dialogue. Bond only unlocks stories and does not change the squad, stats, or combat rewards. Stories can be reread, and read status is saved.
 
-First-time players receive the full animation experience. The upper-right Reduce motion control saves an explicit preference in the browser; updates preserve a previously saved reduced-motion choice.
+The prominent **Settings** button in the upper-right corner also works while connecting or offline. Its dialog stays inside the Codekin window, with Interface, Experience and Help pages. Options include a plugin-only Chinese/English override (or Follow DSH), opening page, position lock and resets, full animations, particles, encounter alerts and gameplay pause. Help links to the GitHub repository and Issues. Interface preferences stay in the current browser; game progress stays on the local Host.
+
+First-time players receive full animations. Turn them off under **Settings → Experience**; updates preserve an existing reduced-motion preference. Pausing keeps the save. After closing the window, re-enable the plugin under **DSH settings → Codekin**.
 
 ## What's new in `0.3.8-rc.1`
 
@@ -130,7 +142,7 @@ pnpm check
 pnpm lifecycle:dsh
 ```
 
-`pnpm check` runs type checks, unit tests, content/asset validation, a fixed replay, a seven-scenario combat simulation, production builds, and performance budgets. CI covers Windows, macOS, and Ubuntu with Node.js 22 and 24. Installed lifecycle checks exercise authenticated browser interaction, keyboard focus, restart, uninstall/reinstall, and save preservation on DSH `0.1.5-rc.1`, both standalone and with dsh-web `0.3.22`.
+`pnpm check` runs type checks, unit tests, content/asset validation, a fixed replay, a seven-scenario combat simulation, production builds, and performance budgets. CI covers Windows, macOS, and Ubuntu with Node.js 22 and 24. Installed lifecycle checks exercise authenticated browser interaction, keyboard focus, restart, uninstall/reinstall, and save preservation on DSH `0.1.5-rc.1`, both standalone and with dsh-web `0.3.23`.
 
 Final game artwork and public gameplay screenshots are included in the repository. Internal evolution comparison galleries, references, source masters, prompts, and test saves remain outside the repository and release package.
 

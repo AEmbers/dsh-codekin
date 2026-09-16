@@ -28,6 +28,7 @@ import type {
 import {
   TraceWildConnectionError,
   createTraceWildConnection,
+  notifyTraceWildSettingsChanged,
   subscribeTraceWildSettingsChanged,
 } from '../bridge.ts'
 import {
@@ -40,13 +41,15 @@ import {
   skillByCreatureId,
   starterCreatureIds,
 } from '../content.ts'
-import type { TraceWildLocaleKey } from '../locales.ts'
+import { codekinTranslator, type TraceWildLocaleKey } from '../locales.ts'
 import { BATTLE_MOTION, cascadeFallTime, tileFallTime } from '../battle-motion.ts'
 import { CodekinMapView } from './CodekinMapView.tsx'
 import { CompanionLounge } from './CompanionLounge.tsx'
 import { PanelDialog, PanelDialogScope, PageControls, usePagination } from './PanelDialog.tsx'
 import { BattleStage } from './BattleStage.tsx'
 import { SignalFrame, SignalMesh } from './GraphicAccents.tsx'
+import { CodekinSettingsDialog } from './CodekinSettingsDialog.tsx'
+import { useUiPreferences } from './use-ui-preferences.ts'
 import { CodekinDetailModal, CodekinView } from './CodekinRosterView.tsx'
 import type { CreatureLook } from '../appearance-presentation.ts'
 import { resolveCreatureSprite } from '../appearance-presentation.ts'
@@ -58,11 +61,11 @@ import {
   creatureName,
 } from './creature-presentation.tsx'
 import { useDialogAccessibility } from './dialog-accessibility.ts'
-import { boardNeighbour, projectRelease, readUiPreferences, saveUiPreferences } from '../motion.ts'
+import { boardNeighbour, CODEKIN_PAGES, projectRelease, readUiPreferences, saveUiPreferences } from '../motion.ts'
 import { useParticleField, useReducedMotion, useSpringAnimation } from './use-motion.ts'
 import css from './tracewild.module.css'
 
-const TABS = ['lounge', 'map', 'tower', 'squad', 'dex', 'inventory'] as const
+const TABS = CODEKIN_PAGES
 type Tab = typeof TABS[number]
 
 interface WindowPosition {
@@ -401,12 +404,16 @@ function logText(
   return `${t(key)}${suffix}${quality}`
 }
 
-export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
+export function TraceWildOverlay({ t: hostT }: TraceWildOverlayProps) {
+  const { preferences, update: updatePreferences, saved: preferencesSaved } = useUiPreferences()
+  const t = useMemo(() => codekinTranslator(hostT, preferences.language), [hostT, preferences.language])
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const closeSettings = useCallback(() => { setSettingsOpen(false) }, [])
   const connection = useMemo(() => createTraceWildConnection(), [])
   const [snapshot, setSnapshot] = useState<TraceWildSnapshot>()
   const [online, setOnline] = useState(true)
   const [open, setOpen] = useState(false)
-  const [tab, setTab] = useState<Tab>('lounge')
+  const [tab, setTab] = useState<Tab>(() => preferences.startPage === 'last' ? preferences.lastPage ?? 'lounge' : preferences.startPage ?? 'lounge')
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<string>()
   const [pulse, setPulse] = useState(false)
@@ -419,11 +426,10 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
   const [rewardQueue, setRewardQueue] = useState<AcquiredItem[][]>([])
   const [releaseCandidate, setReleaseCandidate] = useState<string>()
   const [battleTransition, setBattleTransition] = useState<BattleTransition>()
-  const [motionPreference, setMotionPreference] = useState(() => readUiPreferences().reducedMotion)
-  const { reducedMotion } = useReducedMotion(motionPreference)
+  const { reducedMotion } = useReducedMotion(preferences.reducedMotion)
   const windowSpring = useSpringAnimation(reducedMotion)
   const launcherSpring = useSpringAnimation(reducedMotion)
-  const effects = useParticleField(reducedMotion, css.motionParticle!)
+  const effects = useParticleField(reducedMotion || preferences.particles === false, css.motionParticle!)
   const [squadEditing, setSquadEditing] = useState(false)
   const [pendingNavigation, setPendingNavigation] = useState<Tab | 'close'>()
   const hasOpened = useRef(false)
@@ -441,7 +447,7 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
   const zh = t('title') === '码灵'
   const rewardVisible = rewardQueue[0] !== undefined && snapshot?.state.starterChosen === true
     && snapshot.state.battle === undefined && codekinDetail === undefined
-    && releaseCandidate === undefined && pendingNavigation === undefined
+    && releaseCandidate === undefined && pendingNavigation === undefined && !settingsOpen
   const warmState = snapshot?.state
   const warmPortraits = warmState === undefined ? [] : [
     selectedCompanion(warmState),
@@ -459,6 +465,7 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
     if (target === 'close') setOpen(false)
     else setTab(target)
   }, [])
+  useEffect(() => { if (open) saveUiPreferences({ lastPage: tab }) }, [open, tab])
   const requestNavigation = useCallback((target: Tab | 'close'): void => {
     if (target === tab) return
     if (squadEditing && squadDraft.join('|') !== latestSnapshot.current?.state.squad.join('|')) {
@@ -649,7 +656,7 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
   }, [])
 
   const beginWindowDrag = (event: ReactPointerEvent<HTMLElement>): void => {
-    if (event.button !== 0 || (event.target as HTMLElement).closest('button') !== null) return
+    if (preferences.lockPosition || event.button !== 0 || (event.target as HTMLElement).closest('button') !== null) return
     const rect = overlayElement.current?.getBoundingClientRect()
     if (rect === undefined) return
     windowSpring.stop()
@@ -710,7 +717,7 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
   }
 
   const beginLauncherDrag = (event: ReactPointerEvent<HTMLButtonElement>): void => {
-    if (event.button !== 0) return
+    if (preferences.lockPosition || event.button !== 0) return
     launcherSpring.stop()
     const rect = event.currentTarget.getBoundingClientRect()
     launcherWasDragged.current = false
@@ -803,6 +810,7 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
       adoptSnapshot(response)
       setBattleTransition(undefined)
       setOnline(true)
+      if (action.type === 'set-enabled') notifyTraceWildSettingsChanged()
       if (response.notice === 'capture-success') setNotice(t('captured'))
       if (response.notice === 'capture-failed') setNotice(t('captureFailed'))
       if (response.notice === 'battle-lost') setNotice(t('battleLost'))
@@ -857,20 +865,30 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
     void act({ type: 'claim-idle-reward' })
   }
 
-  if (state?.enabled === false) return null
+  const resetWindow = (): void => {
+    windowSpring.stop(); pendingWindowPosition.current = undefined
+    setWindowPosition({ x: 0, y: 0 }); saveUiPreferences({ windowPosition: { x: 0, y: 0 } })
+  }
+  const resetLauncher = (): void => {
+    launcherSpring.stop(); pendingLauncherPosition.current = undefined
+    setLauncherPosition(undefined); saveUiPreferences({ launcherPosition: undefined })
+  }
+
+  if (state?.enabled === false && !open) return null
 
   const launcher = (
     <button
       ref={launcherElement}
       data-motion={reducedMotion ? 'reduce' : 'full'}
       type="button"
-      className={`${css.launcher} ${pendingIdleReward !== undefined ? css.launcherReward : ''} ${draggingLauncher ? css.launcherDragging : ''} ${pulse ? css.launcherPulse : ''}`}
+      className={`${css.launcher} ${pendingIdleReward !== undefined ? css.launcherReward : ''} ${draggingLauncher ? css.launcherDragging : ''} ${pulse && preferences.encounterBadges !== false ? css.launcherPulse : ''}`}
       style={launcherPosition === undefined ? undefined : { left: launcherPosition.x, top: launcherPosition.y, right: 'auto', bottom: 'auto' }}
       onClick={() => {
         if (launcherWasDragged.current) {
           launcherWasDragged.current = false
           return
         }
+        setTab(preferences.startPage === 'last' ? preferences.lastPage ?? tab : preferences.startPage ?? 'lounge')
         setOpen(true)
         setPulse(false)
       }}
@@ -896,7 +914,7 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
             draggable={false}
           />
         : <span className={css.launcherGift} aria-hidden="true"><i /></span>}
-      {uncaught > 0 && <span className={css.badge}>{uncaught > 99 ? '99+' : uncaught}</span>}
+      {uncaught > 0 && preferences.encounterBadges !== false && <span className={css.badge}>{uncaught > 99 ? '99+' : uncaught}</span>}
     </button>
   )
 
@@ -923,16 +941,11 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
         <SignalMesh className={css.windowMesh} />
         <PanelDialogScope>
         <div ref={inertBackground} className={css.windowTools}>
-        {pendingIdleReward !== undefined && (
+        {pendingIdleReward !== undefined && state?.enabled !== false && (
           <IdleRewardButton reward={pendingIdleReward} t={t} zh={zh} busy={busy} claim={claimIdleReward} />
         )}
-        <button type="button" className={css.motionToggle} aria-pressed={reducedMotion}
-          title={t('reduceMotion')} aria-label={t('reduceMotion')}
-          onClick={() => { setMotionPreference(!reducedMotion); saveUiPreferences({ reducedMotion: !reducedMotion }) }}>
-          <span aria-hidden="true">{reducedMotion ? '◉' : '≈'}</span>
-        </button>
-        <button type="button" className={css.windowReset} title={t('resetWindow')} aria-label={t('resetWindow')}
-          onClick={() => { windowSpring.stop(); pendingWindowPosition.current = undefined; setWindowPosition({ x: 0, y: 0 }); saveUiPreferences({ windowPosition: { x: 0, y: 0 } }) }}>↙</button>
+        <button type="button" className={css.settingsTrigger} aria-haspopup="dialog" aria-expanded={settingsOpen} aria-controls="codekin-settings"
+          onClick={() => { setSettingsOpen(true) }}><span aria-hidden="true">⚙</span>{t('openSettings')}</button>
         <button type="button" className={css.windowClose} onClick={() => { requestNavigation('close') }} title={t('close')} aria-label={t('close')}>
           <span aria-hidden="true">×</span>
         </button>
@@ -942,9 +955,8 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
           className={css.header}
           title={t('dragWindow')}
           onDoubleClick={(event) => {
-            if ((event.target as HTMLElement).closest('button') === null) {
-              windowSpring.stop(); pendingWindowPosition.current = undefined
-              setWindowPosition({ x: 0, y: 0 }); saveUiPreferences({ windowPosition: { x: 0, y: 0 } })
+            if (!preferences.lockPosition && (event.target as HTMLElement).closest('button') === null) {
+              resetWindow()
             }
           }}
           onPointerDown={beginWindowDrag}
@@ -977,6 +989,7 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
 
         {state === undefined
           ? <div className={css.centerMessage}><span className={css.loadingMark} aria-hidden="true">◌</span><p>{online ? t('loading') : t('disconnected')}</p>{!online && <button type="button" onClick={() => { void refresh() }}>{t('retry')}</button>}</div>
+          : !state.enabled ? <div className={css.centerMessage}><p>{t('settingsOffHint')}</p><button type="button" onClick={() => { setSettingsOpen(true) }}>{t('openSettings')}</button></div>
           : (
             <>
               {!state.starterChosen && (
@@ -988,6 +1001,8 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
                     key={id}
                     type="button"
                     data-tab={id}
+                    title={id === 'tower' ? t('towerTitle') : t(id)}
+                    aria-label={id === 'tower' ? t('towerTitle') : t(id)}
                     aria-current={tab === id ? 'page' : undefined}
                     aria-controls="codekin-page"
                     tabIndex={tab === id ? 0 : -1}
@@ -1004,7 +1019,7 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
                     }}
                   >
                     <span aria-hidden="true">0{index + 1}<i>{TAB_ICONS[id]}</i></span>
-                    <small>{id === 'tower' ? t('towerTitle') : t(id)}</small>
+                    <small>{t(id === 'tower' ? 'towerNav' : id === 'map' ? 'mapNav' : id === 'inventory' ? 'inventoryNav' : id)}</small>
                   </button>
                 ))}
               </nav>
@@ -1063,6 +1078,7 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
                   act={act}
                   transition={battleTransition}
                   reducedMotion={reducedMotion}
+                  particles={preferences.particles !== false}
                   minimize={() => { navigate('close') }}
                 />
               )}
@@ -1123,6 +1139,10 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
               })()}
             </>
           )}
+        {settingsOpen && <CodekinSettingsDialog t={t} preferences={preferences} saved={preferencesSaved} update={updatePreferences}
+          close={closeSettings} resetWindow={resetWindow} resetLauncher={resetLauncher} refresh={refresh}
+          enabled={state?.enabled} online={online} busy={busy} inBattle={state?.battle !== undefined}
+          setEnabled={async enabled => (await act({ type: 'set-enabled', enabled })) !== undefined} />}
         <div ref={effects.layer} className={css.particleLayer} aria-hidden="true" />
         </PanelDialogScope>
       </section>
@@ -1485,6 +1505,7 @@ function BattleView(props: {
   act: (action: TraceWildAction, present?: BattleActionPresenter) => Promise<TraceWildActionResponse | undefined>
   transition?: BattleTransition | undefined
   reducedMotion: boolean
+  particles: boolean
   minimize: () => void
 }) {
   const battle = props.state.battle!
@@ -1494,7 +1515,7 @@ function BattleView(props: {
   const [focusedTile, setFocusedTile] = useState(0)
   const boardElement = useRef<HTMLDivElement>(null)
   const boardHadFocus = useRef(false)
-  const battleEffects = useParticleField(props.reducedMotion, css.motionParticle!)
+  const battleEffects = useParticleField(props.reducedMotion || !props.particles, css.motionParticle!)
   const [gesture, setGesture] = useState<TileGesture>()
   const [swapMotion, setSwapMotion] = useState<SwapMotion>()
   const [animating, setAnimating] = useState(false)

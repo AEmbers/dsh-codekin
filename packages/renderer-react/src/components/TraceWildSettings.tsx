@@ -3,12 +3,16 @@ import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SettingsSectionOwnerProps } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { TraceWildSnapshot } from '../../../engine/src/types.ts'
 import { createTraceWildConnection, notifyTraceWildSettingsChanged } from '../bridge.ts'
+import { codekinTranslator } from '../locales.ts'
+import { useUiPreferences } from './use-ui-preferences.ts'
 import css from './tracewild.module.css'
 
 export type TraceWildSettingsProps = SettingsSectionOwnerProps & PropsLocale<'tracewild'>
 
 /** DSH Settings entry for the persisted Codekin gameplay switch. */
-export function TraceWildSettings({ t }: TraceWildSettingsProps) {
+export function TraceWildSettings({ t: hostT }: TraceWildSettingsProps) {
+  const { preferences } = useUiPreferences()
+  const t = useMemo(() => codekinTranslator(hostT, preferences.language), [hostT, preferences.language])
   const connection = useMemo(() => createTraceWildConnection(), [])
   const [snapshot, setSnapshot] = useState<TraceWildSnapshot>()
   const [online, setOnline] = useState(true)

@@ -1,5 +1,9 @@
+import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots';
 export declare const NS = "tracewild";
 export declare const zh: {
+    readonly mapNav: "码灵地图";
+    readonly towerNav: "无尽栈塔";
+    readonly inventoryNav: "核心与记录";
     readonly lounge: "休息室";
     readonly companionTitle: "留一点时间，陪她坐坐";
     readonly companionKicker: "COMPANION LOUNGE";
@@ -50,6 +54,48 @@ export declare const zh: {
     readonly reduceMotion: "减少动态效果";
     readonly resetWindow: "窗口归位";
     readonly dismissNotice: "关闭提示";
+    readonly openSettings: "设置";
+    readonly preferencesTitle: "码灵设置";
+    readonly closeSettings: "关闭设置";
+    readonly preferencesSections: "设置分类";
+    readonly preferencesInterface: "界面";
+    readonly preferencesEffects: "体验";
+    readonly preferencesHelp: "帮助";
+    readonly preferencesLanguage: "显示语言";
+    readonly preferencesLanguageHint: "仅改变码灵，不影响 DSH。";
+    readonly languageAuto: "跟随 DSH";
+    readonly preferencesStartPage: "打开时显示";
+    readonly preferencesStartPageHint: "下次打开码灵窗口时生效。";
+    readonly startPageLast: "上次页面";
+    readonly preferencesLock: "锁定位置";
+    readonly preferencesLockHint: "固定窗口和悬浮入口，避免误拖动。";
+    readonly preferencesFullMotion: "完整动画";
+    readonly preferencesFullMotionHint: "窗口、立绘与战斗动效；首次使用默认开启。";
+    readonly preferencesParticles: "点击与战斗粒子";
+    readonly preferencesParticlesHint: "完整动画开启时显示粒子特效。";
+    readonly preferencesBadges: "遭遇提醒";
+    readonly preferencesBadgesHint: "在悬浮入口显示数量角标与新遭遇闪动。";
+    readonly preferencesPositions: "位置调整";
+    readonly resetLauncher: "入口归位";
+    readonly preferencesDefaults: "恢复界面默认设置";
+    readonly preferencesSaved: "设置自动保存在当前浏览器。";
+    readonly preferencesNotSaved: "浏览器无法保存；本次调整仍有效，刷新后可能恢复。";
+    readonly preferencesOn: "开";
+    readonly preferencesOff: "关";
+    readonly preferencesHost: "玩法开关";
+    readonly preferencesHostHint: "暂停会保留存档；关闭窗口后，可从 DSH 设置重新启用。";
+    readonly preferencesBattlePause: "战斗结束后可暂停玩法。";
+    readonly preferencesActionFailed: "操作未完成，请重试。";
+    readonly preferencesGitHub: "一起完善码灵";
+    readonly preferencesGitHubHint: "欢迎到 GitHub 查看源码、更新进展，或通过 Issue 反馈问题和建议。";
+    readonly preferencesRepository: "GitHub 仓库";
+    readonly preferencesIssue: "提交问题 / 建议";
+    readonly preferencesIssues: "查看已有 Issues";
+    readonly preferencesIssueHint: "建议说明 DSH 与插件版本、复现步骤和截图；提交前请检查截图中的私人信息。";
+    readonly preferencesConnection: "Host 连接";
+    readonly preferencesConnected: "已连接";
+    readonly preferencesDisconnected: "离线";
+    readonly preferencesStorageHint: "游戏进度由本机 Host 保存；停用与存档管理也可在 DSH 设置 → 码灵中操作。";
     readonly unsavedSquad: "保存这次编队调整？";
     readonly unsavedSquadHint: "离开前可以保存，也可以保留原来的编队。";
     readonly keepEditing: "继续编辑";
@@ -346,6 +392,8 @@ export declare const zh: {
 };
 export declare const en: Record<keyof typeof zh, string>;
 export type TraceWildLocaleKey = keyof typeof zh;
+/** Plugin-local language override; following DSH delegates to its translator. */
+export declare function codekinTranslator(host: TranslateNS<'tracewild'>, language?: 'auto' | 'zh' | 'en'): typeof host;
 declare module '@deepseek-ai/dsh-client-ui-slots' {
     interface LocaleNamespaceMap {
         tracewild: TraceWildLocaleKey;

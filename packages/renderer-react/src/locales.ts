@@ -1,6 +1,9 @@
+import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
+
 export const NS = 'tracewild'
 
 export const zh = {
+  mapNav: '码灵地图', towerNav: '无尽栈塔', inventoryNav: '核心与记录',
   lounge: '休息室', companionTitle: '留一点时间，陪她坐坐', companionKicker: 'COMPANION LOUNGE',
   companionChoose: '更换看板', companionSelect: '选择看板码灵', companionCurrent: '当前看板', companionCloseChoice: '收起选择',
   companionHint: '看板使用她当前的外观，可在码灵详情的衣架中更换。', companionTalk: '和{name}说说话', companionTap: '点击她，说说话',
@@ -23,6 +26,23 @@ export const zh = {
   appearanceHint: '外观独立保存，不影响属性与战斗能力。', appearanceBattleLocked: '战斗结束后可以更换外观。',
   appearanceUnavailable: '进化立绘暂不可用', evolutionUnlocked: '进化形解锁 · Lv.30', appearanceFailed: '外观未能更换，请稍后重试。',
   reduceMotion: '减少动态效果', resetWindow: '窗口归位', dismissNotice: '关闭提示',
+  openSettings: '设置', preferencesTitle: '码灵设置', closeSettings: '关闭设置', preferencesSections: '设置分类',
+  preferencesInterface: '界面', preferencesEffects: '体验', preferencesHelp: '帮助',
+  preferencesLanguage: '显示语言', preferencesLanguageHint: '仅改变码灵，不影响 DSH。', languageAuto: '跟随 DSH',
+  preferencesStartPage: '打开时显示', preferencesStartPageHint: '下次打开码灵窗口时生效。', startPageLast: '上次页面',
+  preferencesLock: '锁定位置', preferencesLockHint: '固定窗口和悬浮入口，避免误拖动。',
+  preferencesFullMotion: '完整动画', preferencesFullMotionHint: '窗口、立绘与战斗动效；首次使用默认开启。',
+  preferencesParticles: '点击与战斗粒子', preferencesParticlesHint: '完整动画开启时显示粒子特效。',
+  preferencesBadges: '遭遇提醒', preferencesBadgesHint: '在悬浮入口显示数量角标与新遭遇闪动。',
+  preferencesPositions: '位置调整', resetLauncher: '入口归位', preferencesDefaults: '恢复界面默认设置',
+  preferencesSaved: '设置自动保存在当前浏览器。', preferencesNotSaved: '浏览器无法保存；本次调整仍有效，刷新后可能恢复。',
+  preferencesOn: '开', preferencesOff: '关', preferencesHost: '玩法开关', preferencesHostHint: '暂停会保留存档；关闭窗口后，可从 DSH 设置重新启用。',
+  preferencesBattlePause: '战斗结束后可暂停玩法。', preferencesActionFailed: '操作未完成，请重试。',
+  preferencesGitHub: '一起完善码灵', preferencesGitHubHint: '欢迎到 GitHub 查看源码、更新进展，或通过 Issue 反馈问题和建议。',
+  preferencesRepository: 'GitHub 仓库', preferencesIssue: '提交问题 / 建议', preferencesIssues: '查看已有 Issues',
+  preferencesIssueHint: '建议说明 DSH 与插件版本、复现步骤和截图；提交前请检查截图中的私人信息。',
+  preferencesConnection: 'Host 连接', preferencesConnected: '已连接', preferencesDisconnected: '离线',
+  preferencesStorageHint: '游戏进度由本机 Host 保存；停用与存档管理也可在 DSH 设置 → 码灵中操作。',
   unsavedSquad: '保存这次编队调整？', unsavedSquadHint: '离开前可以保存，也可以保留原来的编队。', keepEditing: '继续编辑', saveAndLeave: '保存并离开', discardAndLeave: '放弃调整',
   searchCodekin: '搜索名称或图鉴编号', emptySlot: '选择伙伴', squadSlot: '出战 {slot} · {name}', keyboardBoard: '方向键移动，空格或回车选择两个相邻色块。',
   title: '码灵', subtitle: '你的 DSH 活动正在生成一座码灵世界', open: '打开码灵', close: '关闭', dragWindow: '按住标题栏可拖动，双击归位', dragLauncher: '可拖动入口位置',
@@ -117,6 +137,7 @@ export const zh = {
 } as const
 
 export const en: Record<keyof typeof zh, string> = {
+  mapNav: 'Map', towerNav: 'Tower', inventoryNav: 'Records',
   lounge: 'Lounge', companionTitle: 'A little time together', companionKicker: 'COMPANION LOUNGE',
   companionChoose: 'Change companion', companionSelect: 'Choose a lounge companion', companionCurrent: 'Current companion', companionCloseChoice: 'Close selection',
   companionHint: 'Her current appearance is used here. Change it with the hanger in her details.', companionTalk: 'Talk with {name}', companionTap: 'Tap her to talk',
@@ -139,6 +160,23 @@ export const en: Record<keyof typeof zh, string> = {
   appearanceHint: 'Saved for this Codekin. Stats and abilities stay the same.', appearanceBattleLocked: 'Change appearance after the battle.',
   appearanceUnavailable: 'Evolved art unavailable', evolutionUnlocked: 'Evolution unlocked · Lv.30', appearanceFailed: 'Could not change appearance. Please try again.',
   reduceMotion: 'Reduce motion', resetWindow: 'Center window', dismissNotice: 'Dismiss notice',
+  openSettings: 'Settings', preferencesTitle: 'Codekin settings', closeSettings: 'Close settings', preferencesSections: 'Settings categories',
+  preferencesInterface: 'Interface', preferencesEffects: 'Experience', preferencesHelp: 'Help',
+  preferencesLanguage: 'Language', preferencesLanguageHint: 'Changes Codekin only, not DSH.', languageAuto: 'Follow DSH',
+  preferencesStartPage: 'Opening page', preferencesStartPageHint: 'Applies the next time you open Codekin.', startPageLast: 'Last page',
+  preferencesLock: 'Lock position', preferencesLockHint: 'Keep the window and floating launcher in place.',
+  preferencesFullMotion: 'Full animations', preferencesFullMotionHint: 'Window, portrait and battle motion. On by default.',
+  preferencesParticles: 'Click & battle particles', preferencesParticlesHint: 'Show particle effects while full animations are on.',
+  preferencesBadges: 'Encounter alerts', preferencesBadgesHint: 'Show a count badge and pulse on the launcher.',
+  preferencesPositions: 'Position', resetLauncher: 'Reset launcher', preferencesDefaults: 'Restore interface defaults',
+  preferencesSaved: 'Settings save automatically in this browser.', preferencesNotSaved: 'Browser storage is unavailable. Changes work for now but may reset on reload.',
+  preferencesOn: 'On', preferencesOff: 'Off', preferencesHost: 'Gameplay', preferencesHostHint: 'Pausing keeps your save. After closing, re-enable Codekin in DSH settings.',
+  preferencesBattlePause: 'Finish the battle before pausing gameplay.', preferencesActionFailed: 'Could not apply the change. Please retry.',
+  preferencesGitHub: 'Help shape Codekin', preferencesGitHubHint: 'Visit GitHub for source code and updates. Report bugs or suggest features through Issues.',
+  preferencesRepository: 'GitHub repository', preferencesIssue: 'Report / suggest', preferencesIssues: 'Browse Issues',
+  preferencesIssueHint: 'Include DSH and plugin versions, steps and screenshots. Check screenshots for private information before posting.',
+  preferencesConnection: 'Host connection', preferencesConnected: 'Connected', preferencesDisconnected: 'Offline',
+  preferencesStorageHint: 'Game progress is saved by your local Host. Gameplay and save management are also in DSH settings → Codekin.',
   unsavedSquad: 'Save your squad changes?', unsavedSquadHint: 'Save this lineup before leaving, or keep your previous squad.', keepEditing: 'Keep editing', saveAndLeave: 'Save & leave', discardAndLeave: 'Discard changes',
   searchCodekin: 'Search name or index number', emptySlot: 'Choose a partner', squadSlot: 'Slot {slot} · {name}', keyboardBoard: 'Arrow keys to move. Space or Enter to select adjacent panels.',
   title: 'Codekin', subtitle: 'Your DSH activity is growing a world of Codekin', open: 'Open Codekin', close: 'Close', dragWindow: 'Drag the title bar to move; double-click to center', dragLauncher: 'Drag to reposition',
@@ -233,6 +271,19 @@ export const en: Record<keyof typeof zh, string> = {
 }
 
 export type TraceWildLocaleKey = keyof typeof zh
+
+/** Plugin-local language override; following DSH delegates to its translator. */
+export function codekinTranslator(
+  host: TranslateNS<'tracewild'>,
+  language: 'auto' | 'zh' | 'en' = 'auto',
+): typeof host {
+  if (language === 'auto') return host
+  const dictionary = language === 'zh' ? zh : en
+  return (key, params) => Object.hasOwn(dictionary, key)
+    ? dictionary[key as TraceWildLocaleKey].replace(/\{(\w+)\}/g, (token, name: string) =>
+        params !== undefined && Object.hasOwn(params, name) ? String(params[name]) : token)
+    : host(key, params)
+}
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {

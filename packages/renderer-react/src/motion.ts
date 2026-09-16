@@ -36,17 +36,27 @@ export function boardNeighbour(index: number, key: string, size = 8): number {
   return index
 }
 
+export const CODEKIN_PAGES = ['lounge', 'map', 'tower', 'squad', 'dex', 'inventory'] as const
+export type CodekinPage = typeof CODEKIN_PAGES[number]
+export type CodekinLanguage = 'auto' | 'zh' | 'en'
+export const UI_PREFERENCES_KEY = 'codekin.ui.v1'
+export const UI_PREFERENCES_CHANGED = 'codekin:ui-preferences'
+
 export interface UiPreferences {
   reducedMotion?: boolean
+  language?: CodekinLanguage
+  startPage?: CodekinPage | 'last'
+  lastPage?: CodekinPage
+  particles?: boolean
+  encounterBadges?: boolean
+  lockPosition?: boolean
   windowPosition?: MotionPoint
-  launcherPosition?: MotionPoint
+  launcherPosition?: MotionPoint | undefined
 }
-
-const PREFERENCES_KEY = 'codekin.ui.v1'
 
 export function readUiPreferences(): UiPreferences {
   try {
-    const raw: unknown = JSON.parse(localStorage.getItem(PREFERENCES_KEY) ?? '{}')
+    const raw: unknown = JSON.parse(localStorage.getItem(UI_PREFERENCES_KEY) ?? '{}')
     if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return {}
     const row = raw as Record<string, unknown>
     const point = (value: unknown): MotionPoint | undefined => {
@@ -59,12 +69,22 @@ export function readUiPreferences(): UiPreferences {
     }
     return {
       ...(typeof row.reducedMotion === 'boolean' ? { reducedMotion: row.reducedMotion } : {}),
+      ...(['auto', 'zh', 'en'].includes(row.language as string) ? { language: row.language as CodekinLanguage } : {}),
+      ...(row.startPage === 'last' || CODEKIN_PAGES.includes(row.startPage as CodekinPage) ? { startPage: row.startPage as NonNullable<UiPreferences['startPage']> } : {}),
+      ...(CODEKIN_PAGES.includes(row.lastPage as CodekinPage) ? { lastPage: row.lastPage as CodekinPage } : {}),
+      ...(typeof row.particles === 'boolean' ? { particles: row.particles } : {}),
+      ...(typeof row.encounterBadges === 'boolean' ? { encounterBadges: row.encounterBadges } : {}),
+      ...(typeof row.lockPosition === 'boolean' ? { lockPosition: row.lockPosition } : {}),
       ...(point(row.windowPosition) === undefined ? {} : { windowPosition: point(row.windowPosition)! }),
       ...(point(row.launcherPosition) === undefined ? {} : { launcherPosition: point(row.launcherPosition)! }),
     }
   } catch { return {} }
 }
 
-export function saveUiPreferences(update: UiPreferences): void {
-  try { localStorage.setItem(PREFERENCES_KEY, JSON.stringify({ ...readUiPreferences(), ...update })) } catch { /* Storage can be unavailable in private contexts. */ }
+export function saveUiPreferences(update: UiPreferences): boolean {
+  try {
+    localStorage.setItem(UI_PREFERENCES_KEY, JSON.stringify({ ...readUiPreferences(), ...update }))
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') window.dispatchEvent(new Event(UI_PREFERENCES_CHANGED))
+    return true
+  } catch { return false }
 }

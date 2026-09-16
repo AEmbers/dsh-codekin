@@ -993,7 +993,9 @@
 .windowTools .idleClaimButton { position: relative; margin: 0; color: #ffdf94; }
 .windowTools .idleClaimTooltip { right: -32px; }
 .windowTools .idleClaimButton .rewardCrate { width: 17px; height: 14px; }
-.motionToggle[aria-pressed=true] { border-color: #84f4ff; color: #84f4ff; }
+.windowTools .settingsTrigger { width: auto; min-width: 78px; padding: 0 9px; display: flex; gap: 5px; justify-content: center; font-size: 11px; font-weight: 900; color: #0a1539; background: #d7ff3f; border-color: #e5ff83; box-shadow: 2px 2px 0 #7143d7; }
+.windowTools .settingsTrigger span { font-size: 18px; color: inherit; }
+.windowTools .settingsTrigger:hover { background: #efffa6; color: #0a1539; }
 .header { position: relative; flex: 0 0 auto; min-height: 99px; display: grid; grid-template-columns: 1fr; gap: 10px; padding: 15px 15px 10px; margin: 0; border: 0; border-radius: 0; cursor: grab; touch-action: none; backdrop-filter: none; }
 .header::before { content: ''; position: absolute; inset: auto auto 0 0; width: 104px; height: 35px; background: var(--ck-mesh); mask-image: linear-gradient(30deg,#000,transparent 80%); pointer-events: none; }
 .header::after { left: 0; right: 0; bottom: -1px; }
