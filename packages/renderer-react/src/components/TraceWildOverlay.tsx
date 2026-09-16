@@ -46,6 +46,7 @@ import { CodekinMapView } from './CodekinMapView.tsx'
 import { CompanionLounge } from './CompanionLounge.tsx'
 import { PanelDialog, PanelDialogScope, PageControls, usePagination } from './PanelDialog.tsx'
 import { BattleStage } from './BattleStage.tsx'
+import { SignalFrame, SignalMesh } from './GraphicAccents.tsx'
 import { CodekinDetailModal, CodekinView } from './CodekinRosterView.tsx'
 import type { CreatureLook } from '../appearance-presentation.ts'
 import { resolveCreatureSprite } from '../appearance-presentation.ts'
@@ -918,6 +919,8 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
         style={{ '--window-x': `${windowPosition.x}px`, '--window-y': `${windowPosition.y}px` } as CSSProperties}
         aria-label={t('title')}
       >
+        <SignalFrame className={css.graphicFrame} />
+        <SignalMesh className={css.windowMesh} />
         <PanelDialogScope>
         <div ref={inertBackground} className={css.windowTools}>
         {pendingIdleReward !== undefined && (
@@ -949,6 +952,7 @@ export function TraceWildOverlay({ t }: TraceWildOverlayProps) {
           onPointerUp={finishWindowDrag}
           onPointerCancel={finishWindowDrag}
         >
+          <SignalMesh className={css.headerMesh} />
           <div className={css.brand}>
             <span className={css.logoCore} aria-hidden="true" />
             <div>
@@ -2053,6 +2057,7 @@ function BattleView(props: {
         tabIndex={-1}
         onKeyDown={dialog.onDialogKeyDown}
       >
+        <SignalMesh className={css.battleMesh} />
         <header className={css.battleHeader}>
           <div>
             <h2>{battle.mode === 'tower' ? props.t('towerBattle') : props.t('battle')}</h2>
@@ -2118,6 +2123,7 @@ function BattleView(props: {
           </div>
 
           <div className={css.boardColumn}>
+            <span className={css.boardLettering} aria-hidden="true">CODEKIN<br />TACTICAL<br />PUZZLE<br />SYSTEM<br /><i>//</i></span>
             <div className={`${css.turnSummary} ${battle.turnOwner === 'boss' ? css.turnSummaryBoss : ''}`} data-turn-owner={battle.turnOwner} aria-live="polite">
               <span className={`${css.ecologyPip} ${css[`pip_${battle.turnOwner === 'boss' ? wild.ecology : activeDefinition.ecology}`]}`}>
                 {TILE_SYMBOLS[battle.turnOwner === 'boss' ? wild.ecology : activeDefinition.ecology]}

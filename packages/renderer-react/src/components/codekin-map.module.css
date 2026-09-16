@@ -1,12 +1,12 @@
 .map { display: grid; gap: 12px; min-width: 0; color: #f5fbff; }
 .heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 3px 0; }
 .heading > div { min-width: 0; }
-.heading > div > span { color: #a4e9ff; font: 800 9px/1.2 ui-sans-serif, system-ui, sans-serif; letter-spacing: .16em; }
+.heading > div > span { font: 800 9px/1.2 ui-sans-serif, system-ui, sans-serif; letter-spacing: .16em; }
 .heading h2 { margin: 6px 0 0; font-size: clamp(25px, 6vw, 33px); line-height: 1; font-weight: 950; font-style: italic; letter-spacing: -.04em; }
 .heading p { display: flex; align-items: center; gap: 6px; margin: 0; flex-shrink: 0; }
-.heading p b { color: #a6f5ff; font: italic 900 38px/.9 ui-sans-serif, system-ui, sans-serif; letter-spacing: -.08em; }
+.heading p b { font: italic 900 38px/.9 ui-sans-serif, system-ui, sans-serif; letter-spacing: -.08em; }
 .heading p span { color: #badff5; font: 700 9px/1.5 ui-sans-serif, system-ui, sans-serif; }
-.scene { position: relative; isolation: isolate; aspect-ratio: 600 / 620; overflow: hidden; border: 1px solid #76e3ff8c; border-radius: 2px 24px 2px 2px; background: #0a467c; box-shadow: 0 10px 28px #00133355; }
+.scene { position: relative; isolation: isolate; aspect-ratio: 600 / 620; overflow: hidden; border: 1px solid #9d97f5; border-radius: 0; background: #0a467c; box-shadow: 4px 5px 0 #080e2b66; }
 .scene::after { content: ''; position: absolute; z-index: 1; inset: 0; pointer-events: none; box-shadow: inset 0 0 65px #09245266; background: linear-gradient(180deg, #030f4355, transparent 22%, transparent 78%, #00194a99); }
 .city, .leaders { display: block; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .leaders { z-index: 2; color: #c7fbff; }
@@ -15,7 +15,7 @@
 .marker { --signal: #9cf6ff; position: absolute; z-index: 3; width: 25%; display: flex; align-items: center; flex-direction: column; gap: 2px; padding: 2px; border: 0; background: transparent; color: #fff; font-family: inherit; cursor: pointer; transform: translate(-50%, -50%); touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .marker::after { content: ''; position: absolute; z-index: -1; inset: -3px -1px; border: 1px solid transparent; border-radius: 40px 40px 5px 5px; transition: background .25s, border-color .25s; }
 .marker:hover, .marker:focus-visible { z-index: 4; outline: none; }
-.marker:hover::after, .marker:focus-visible::after { border-color: var(--signal); background: #052759e8; box-shadow: 0 8px 20px #00153688; }
+.marker:hover::after, .marker:focus-visible::after { border-color: var(--signal); box-shadow: 0 8px 20px #00153688; }
 .marker:focus-visible::after { outline: 2px solid #fff; outline-offset: 2px; }
 .marker:disabled { cursor: wait; }
 .marker:disabled .portrait { filter: saturate(.5); }
@@ -29,12 +29,12 @@
 .marker[data-quality=nova] .portrait { border-color: #f5abec; }
 .marker[data-quality=origin] .portrait { border-color: #ffdf91; }
 .marker:hover .portrait, .marker:focus-visible .portrait { transform: translateY(-4px) scale(1.06); box-shadow: 0 0 0 2px #075197, 0 0 0 5px #c9faff77, 0 10px 20px #001344; }
-.marker strong { max-width: 100%; min-width: 0; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 5px; padding: 3px 7px; color: #fff; background: #0b389bdd; border-left: 2px solid var(--signal); font-size: 12px; font-weight: 850; line-height: 1.2; box-shadow: 0 2px 5px #00184950; }
-.marker small { max-width: 115%; padding: 2px 4px; color: #d7f7ff; background: #052857e8; white-space: nowrap; font: 700 9px/1.2 ui-sans-serif, system-ui, sans-serif; }
+.marker strong { max-width: 100%; min-width: 0; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 5px; padding: 3px 7px; color: #fff; border-left: 2px solid var(--signal); font-size: 12px; font-weight: 850; line-height: 1.2; box-shadow: 0 2px 5px #00184950; }
+.marker small { max-width: 115%; padding: 2px 4px; color: #d7f7ff; white-space: nowrap; font: 700 9px/1.2 ui-sans-serif, system-ui, sans-serif; }
 .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px 11px; padding: 0 3px; }
-.legend span { display: inline-flex; align-items: center; gap: 5px; color: #d1e6fb; font-size: 11px; }
+.legend span { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; }
 .legend i { width: 7px; height: 7px; border: 1px solid var(--signal); border-radius: 50%; background: color-mix(in srgb, var(--signal) 45%, transparent); }
-.hint { margin: -4px 0 1px; text-align: center; color: #afcbe8; font-size: 11px; line-height: 1.5; }
+.hint { margin: -4px 0 1px; text-align: center; font-size: 11px; line-height: 1.5; }
 .empty { position: absolute; z-index: 3; inset: 34% 10% auto; display: flex; gap: 12px; align-items: center; padding: 16px; background: #072861e8; border-left: 3px solid #a3faff; box-shadow: 0 8px 30px #001b5555; }
 .empty > span { color: #a3faff; font-size: 34px; }
 .empty p { margin: 0; color: #e9faff; font-size: 13px; line-height: 1.7; }
@@ -45,3 +45,14 @@
 @media (max-width: 390px) { .heading h2 { font-size: 26px; } .portrait { width: 43px; height: 43px; } .marker strong { font-size: 11px; padding: 3px 4px; } .marker small { font-size: 8px; } .coordinate { font-size: 7px; left: 12px; } .caption { display: none; } }
 
 @media (max-height: 760px) { .map { gap: 8px; }.scene { width: min(100%,calc((100dvh - 346px)*600/620)); justify-self: center; }.heading h2 { font-size: 24px; }.legend { gap: 5px 9px; }.hint { font-size: 10px; } }
+
+.heading > div > span { color: #c8b9ff; }
+.heading h2 { color: #f1f1ff; }
+.heading p b { color: var(--ck-acid,#d7ff3f); }
+.scene::before { content: ''; position: absolute; z-index: 4; inset: 0; background: linear-gradient(135deg,var(--ck-acid,#d7ff3f) 47%,transparent 49%) left top / 14px 14px no-repeat,linear-gradient(315deg,#9367ff 47%,transparent 49%) right bottom / 22px 22px no-repeat; pointer-events: none; }
+.coordinate { background: #0d1638cc; padding: 5px 7px; border-left: 2px solid #ab91f7; }
+.marker strong { background: #111b46ed; }
+.marker small { background: #111735e8; }
+.marker:hover::after,.marker:focus-visible::after { background: #171d48ed; }
+.legend span { color: #c8d1ef; }
+.hint { color: #bbc9e8; }

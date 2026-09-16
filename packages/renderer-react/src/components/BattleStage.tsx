@@ -10,6 +10,7 @@ import { battlePortraitFraming } from '../battle-portrait-framing.ts'
 import type { TraceWildLocaleKey } from '../locales.ts'
 import { CORE_KEYS, CreatureSprite, ECOLOGY_KEYS, creatureName } from './creature-presentation.tsx'
 import { PanelDialog } from './PanelDialog.tsx'
+import { SignalMesh } from './GraphicAccents.tsx'
 import css, { styleText } from './battle-stage.module.css'
 
 export interface BattleStageDamage {
@@ -183,6 +184,8 @@ export function BattleStage(props: BattleStageProps) {
   return <div className={css.stage} data-battle-stage="diagonal" data-reduced={props.reducedMotion || undefined}
     style={{ '--strike-flight': `${BATTLE_MOTION.flight}ms`, '--strike-impact': `${BATTLE_MOTION.impact}ms`, '--portrait-duration': `${BATTLE_MOTION.handoff}ms` } as CSSProperties}>
     <style data-plugin-css="codekin-battle-stage">{styleText}</style>
+    <SignalMesh className={css.stageMesh} />
+    <span className={css.stageStreaks} aria-hidden="true"><i /><i /><i /></span>
     <div className={css.floor} aria-hidden="true" /><span className={css.stageLabel} aria-hidden="true">{battle.turnOwner === 'boss' ? 'ENEMY PHASE' : 'YOUR MOVE'}<i>◆ CODEKIN</i></span>
     {fighter()}
     {active !== undefined && fighter(active)}

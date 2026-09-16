@@ -1,7 +1,7 @@
 .background { display: contents; }
 .host { position: absolute; inset: 0; z-index: 120; overflow: hidden; border-radius: inherit; pointer-events: none; }
-.backdrop { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 14px; background: #020c26b8; backdrop-filter: blur(5px); pointer-events: auto; }
-.dialog { position: relative; display: flex; flex-direction: column; width: min(440px,100%); min-width: 0; max-height: 100%; padding: 0; border: 1px solid #94c9ef; border-radius: 14px; color: #eaf5ff; color-scheme: dark; background: #102c58; box-shadow: 0 12px 40px #0007; font: 13px/1.6 system-ui,sans-serif; overflow: hidden; animation: reveal .25s ease both; }
+.backdrop { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 14px; background: #060a22c7; backdrop-filter: blur(4px); pointer-events: auto; }
+.dialog { position: relative; display: flex; flex-direction: column; width: min(440px,100%); min-width: 0; max-height: 100%; padding: 0; border: 1px solid #a89aee; border-radius: 0; color: #eaf5ff; color-scheme: dark; background: var(--ck-panel,#101b48); box-shadow: 5px 6px 0 #080e2b99,0 12px 40px #0007; font: 13px/1.6 system-ui,sans-serif; overflow: hidden; animation: reveal .25s ease both; }
 /* Explicit text colors prevent the host's element styles from winning over inheritance. */
 .dialog :where(p, span, strong, b, label, dt, dd, li) { color: #e0edff; }
 .dialog :where(h2, h3, h4) { color: #eff8ff; }
@@ -10,13 +10,15 @@
 .dialog :where(button) { cursor: pointer; }
 .dialog :where(button span, button strong, button b) { color: inherit; }
 .dialog :where(input, textarea)::placeholder { color: #aec6e7; opacity: 1; }
-.heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 1px solid #759cc63b; flex: none; }
+.heading { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 2px solid #8361d9; background: var(--ck-night,#080e2b); flex: none; }
+.heading::before { content: ''; position: absolute; left: 0; top: 0; width: 12px; height: 12px; background: linear-gradient(135deg,var(--ck-acid,#d7ff3f) 48%,transparent 49%); pointer-events: none; }
 .heading h2 { margin: 0; font-size: 17px; color: #eff8ff; }
-.heading button { width: 32px; height: 32px; flex: none; border: 1px solid #a5c6e56b; border-radius: 8px; background: #284675; color: #fff; font: 24px/1 system-ui; cursor: pointer; }
+.heading button { width: 32px; height: 32px; flex: none; border: 1px solid #9497dd; border-radius: 0; background: #22284e; color: #fff; font: 24px/1 system-ui; cursor: pointer; }
 .body { min-height: 0; padding: 16px 18px; overflow: auto; overscroll-behavior: contain; scrollbar-color: #67bde1 #0c2446; scrollbar-width: thin; overflow-wrap: anywhere; }
 .dialog button:focus-visible,.pages button:focus-visible { outline: 2px solid #d1fcff; outline-offset: 2px; }
 .pages { display: flex; align-items: center; justify-content: center; gap: 18px; flex: none; padding-top: 10px; font-size: 11px; }
-.pages button { min-height: 32px; padding: 5px 12px; font: inherit; color: #e0f5ff; background: #164478; border: 1px solid #8cc0e663; border-radius: 6px; cursor: pointer; }
+.pages button { min-height: 32px; padding: 5px 12px; font: inherit; color: #e0f5ff; background: var(--ck-panel,#101b48); border: 1px solid #929bde99; border-radius: 0; cursor: pointer; }
+.pages button:hover:not(:disabled),.heading button:hover { background: #342b69; border-color: #d2beff; }
 .pages button:disabled { opacity: .4; cursor: default; }
 .reading { color: #e0e9fc; font-size: 13px; line-height: 2; }
 .reading p { margin: 0 0 16px; white-space: pre-wrap; overflow-wrap: anywhere; }

@@ -6,6 +6,7 @@ import { COMPANION_BOND_LIMIT, COMPANION_INTERACTION_INTERVAL, COMPANION_STORY_T
 import { creatureById } from '../content.ts'
 import { CreatureSprite, creatureName, ECOLOGY_KEYS } from './creature-presentation.tsx'
 import { PanelDialog, PageControls, StoryPages, usePagination } from './PanelDialog.tsx'
+import { SignalMesh } from './GraphicAccents.tsx'
 import css, { styleText } from './companion-lounge.module.css'
 
 export function CompanionLounge(props: {
@@ -84,9 +85,10 @@ export function CompanionLounge(props: {
   return <section className={css.lounge} aria-label={t('lounge')} data-paused={hidden} data-motion={props.reducedMotion ? 'reduce' : 'full'}>
     <style data-plugin-css="codekin-companion-lounge">{styleText}</style>
     <header className={css.heading}>
+      <SignalMesh className={css.headingMesh} />
       <div><p>{t('companionKicker')}</p><h2>{t('companionTitle')}</h2></div>
       <button ref={selectButton} type="button" aria-expanded={choosing} aria-controls="codekin-companion-selection"
-        onClick={() => setChoosing(value => !value)}>{t('companionChoose')}</button>
+        onClick={() => setChoosing(value => !value)}><span aria-hidden="true">⟳</span>{t('companionChoose')}</button>
     </header>
     {choosing && <PanelDialog id="codekin-companion-selection" title={t('companionSelect')} closeLabel={t('companionCloseChoice')} onClose={closeChoice}>
       <p className={css.appearanceHint}>{t('companionHint')}</p>
@@ -107,6 +109,9 @@ export function CompanionLounge(props: {
       <PageControls {...paging} zh={zh} />
     </PanelDialog>}
     <div className={css.scene} data-ecology={creature.ecology}>
+      <span className={css.sceneWordmark} aria-hidden="true">CODEKIN</span>
+      <span className={css.sceneLettering} aria-hidden="true">STAY<br />PLAY<br />WITH<br />HER<span>↗</span></span>
+      <span className={css.sceneShards} aria-hidden="true"><i /><i /><i /></span>
       <div className={css.identity}><span>{t(ECOLOGY_KEYS[creature.ecology])} · Lv.{captured.level}</span><h3>{name}</h3><small>{t('companionCurrent')}</small></div>
       <div className={css.orbit} aria-hidden="true" /><i className={css.starOne} aria-hidden="true">✦</i><i className={css.starTwo} aria-hidden="true">✧</i>
       <button type="button" className={css.portrait} onClick={() => { void talk() }} disabled={props.busy}
@@ -131,6 +136,7 @@ export function CompanionLounge(props: {
         return <button key={chapter} ref={node => { storyButtons.current[chapter] = node }} type="button" aria-haspopup="dialog"
           disabled={!unlocked || props.busy} aria-expanded={story === chapter} aria-controls="codekin-companion-story"
           data-story-chapter={chapter} onClick={() => { void readStory(chapter) }}>
+          <span className={css.storyPortrait} aria-hidden="true"><CreatureSprite creature={creature} captured={captured} size="small" eager /></span>
           <span className={css.chapter}>{String(chapter + 1).padStart(2, '0')}</span><strong>{entry.title}</strong>
           <small>{unlocked ? t(bond.readStories.includes(chapter) ? 'companionStoryRead' : 'companionStoryNew')
             : t('companionStoryLocked', { points: COMPANION_STORY_THRESHOLDS[chapter]! })}</small>
