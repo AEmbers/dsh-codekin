@@ -64,11 +64,11 @@
 .portraitCrop { overflow: hidden; }
 .portraitScene { opacity: .3; }
 .portraitScene[data-portrait-crop=face] { opacity: .15; }
-.portraitCrop:has(img[data-creature-appearance=ultimate]) { mask-image: linear-gradient(transparent,#000 7% 78%,transparent),linear-gradient(90deg,transparent,#000 9% 91%,transparent); mask-composite: intersect; }
-.portraitLayers .portraitCrop img[data-creature-appearance=ultimate] { position: absolute; left: 50%; top: var(--portrait-top); width: auto; height: var(--portrait-height); max-width: none; transform: translateX(var(--portrait-anchor)); }
+.portraitCrop:has(img[data-creature-appearance=ultimate]),.portraitCrop[data-single-form] { mask-image: linear-gradient(transparent,#000 7% 78%,transparent),linear-gradient(90deg,transparent,#000 9% 91%,transparent); mask-composite: intersect; }
+.portraitLayers .portraitCrop img[data-creature-appearance=ultimate],.portraitLayers .portraitCrop[data-single-form] img { position: absolute; left: 50%; top: var(--portrait-top); width: auto; height: var(--portrait-height); max-width: none; transform: translateX(var(--portrait-anchor)); }
 .teammate[data-appearance=ultimate] .portraitButton { width: 60px; height: 53px; aspect-ratio: auto; max-width: 96%; }
 .portraitCrop[data-portrait-crop=face]:has(img[data-creature-appearance=ultimate]) { mask-image: linear-gradient(transparent,#000 5% 82%,transparent),linear-gradient(90deg,transparent,#000 6% 94%,transparent); }
-.fighter[data-appearance=evolved].ready .arriving img,.fighter[data-appearance=ultimate].ready .arriving .portraitGlow { filter: drop-shadow(0 0 2px #efffff) drop-shadow(0 0 5px #6df6ff); animation: silhouetteReady 2.8s ease-in-out infinite; }
+.fighter[data-appearance=evolved].ready .arriving img,.fighter[data-appearance=ultimate].ready .arriving .portraitGlow,.fighter.ready .arriving .portraitCrop[data-single-form] img { filter: drop-shadow(0 0 2px #efffff) drop-shadow(0 0 5px #6df6ff); animation: silhouetteReady 2.8s ease-in-out infinite; }
 .fighter[data-appearance=evolved] [data-can-cast]:hover .arriving img,.fighter[data-appearance=ultimate] [data-can-cast]:hover .arriving .portraitGlow { filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 10px #6df6ff); }
 .strike { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
 .wave { position: absolute; width: 56px; height: 16px; left: var(--source-x); top: var(--source-y); margin: -8px 0 0 -28px; border-radius: 60% 30%; transform: rotate(-23deg); background: linear-gradient(90deg,transparent,#60edff 65%,#fff); filter: drop-shadow(0 0 8px #5cdfff); animation: stageFlight var(--strike-flight,1000ms) cubic-bezier(.3,.05,.45,1) both; }
@@ -88,7 +88,7 @@
 .stage[data-reduced] .departing,.stage[data-reduced] .wave { display: none; }
 .stage[data-reduced] .halo circle,.stage[data-reduced] .hp i,.stage[data-reduced] .energy i,.stage[data-reduced] .skillMeter i { transition: none; }
 .stage[data-reduced] .impact { animation: none; opacity: .5; transform: none; }
-.stage[data-reduced] .fighter[data-appearance=evolved].ready .arriving img,.stage[data-reduced] .fighter[data-appearance=ultimate].ready .arriving .portraitGlow { animation: none; }
+.stage[data-reduced] .fighter[data-appearance=evolved].ready .arriving img,.stage[data-reduced] .fighter[data-appearance=ultimate].ready .arriving .portraitGlow,.stage[data-reduced] .fighter.ready .arriving .portraitCrop[data-single-form] img { animation: none; }
 @media(max-width:420px) { .stage { --stage-height: 280px; } .stageLabel { font-size: 18px; left: 12px; } .tray { gap: 4px; right: 7px; } .skill { padding: 7px 5px; } .skill strong { font-size: 10px; } .skill small { font-size: 8px; flex-wrap: wrap; gap: 1px; } .damageLane { gap: 5px; right: 7px; bottom: 96px; } .damage { padding-left: 5px; } .damage em { font-size: 8px; } .damage strong { font-size: 22px; } .enemy>.portraitButton { height: 112px; } .enemy>.enemyMeters { top: 114px; } .teammate .portraitName { font-size: 8px; } .active>.portraitName { font-size: 10px; } }
 
 .detailSheet small { display: block; color: #b5d5ed; font-size: 11px; }.detailSheet > strong { display: none; }

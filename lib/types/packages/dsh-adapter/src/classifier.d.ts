@@ -3,9 +3,11 @@ import type { TraceSignal } from '../../engine/src/types.ts';
 export declare class TraceWildEventClassifier {
     private readonly traces;
     private readonly activity;
+    private readonly completedChildTurns;
+    private childWatermark;
     observe(session: Session, event: SessionEvent): TraceSignal | undefined;
     /** Fold child activity into its live top-level turn without ever minting a child reward. */
-    observeRelatedActivity(session: Session, event: SessionEvent): void;
+    observeRelatedActivity(session: Session, event: SessionEvent, child?: Session): void;
     disposeSession(session: Session): void;
     private observeActivity;
     private trace;

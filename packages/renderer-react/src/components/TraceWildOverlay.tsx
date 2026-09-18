@@ -44,6 +44,8 @@ import {
 import { codekinTranslator, type TraceWildLocaleKey } from '../locales.ts'
 import { BATTLE_MOTION, cascadeFallTime, tileFallTime } from '../battle-motion.ts'
 import { CodekinMapView } from './CodekinMapView.tsx'
+import { ExpeditionCombatPanel, expeditionStageHint } from './ExpeditionPanel.tsx'
+import { expeditionActive } from '../../../engine/src/expedition.ts'
 import { CompanionLounge } from './CompanionLounge.tsx'
 import { PanelDialog, PanelDialogScope, PageControls, usePagination } from './PanelDialog.tsx'
 import { BattleStage } from './BattleStage.tsx'
@@ -486,7 +488,12 @@ export function TraceWildOverlay({ t: hostT }: TraceWildOverlayProps) {
     if (previous !== undefined && !sameProfile) setRewardQueue([])
     if (sameProfile && value.state.revision > previous.state.revision) {
       const acquired = acquiredItemsBetween(previous.state, value.state)
-      if (acquired.length > 0) setRewardQueue(queue => [...queue, acquired].slice(-8))
+      // Expedition choices already show banked stage rewards. A second modal
+      // would interrupt those choices and wait underneath their dialog.
+      const expeditionSettlement = previous.state.battle?.mode === 'expedition' && !value.state.battle
+        && (value.state.expedition?.run?.rewards.length ?? 0) > (previous.state.expedition?.run?.rewards.length ?? 0)
+      const shopExchange = value.state.expedition?.shopReceipts?.some(id => !previous.state.expedition?.shopReceipts?.includes(id))
+      if (acquired.length > 0 && !expeditionSettlement && !shopExchange) setRewardQueue(queue => [...queue, acquired].slice(-8))
       if (value.state.encounters.length > previous.state.encounters.length) {
         setPulse(true)
         if (pulseTimer.current !== undefined) window.clearTimeout(pulseTimer.current)
@@ -808,13 +815,14 @@ export function TraceWildOverlay({ t: hostT }: TraceWildOverlayProps) {
         })
       }
       adoptSnapshot(response)
+      if (action.type.startsWith('expedition-') || (snapshot?.state.battle?.mode === 'expedition' && !response.state.battle)) setTab('map')
       setBattleTransition(undefined)
       setOnline(true)
       if (action.type === 'set-enabled') notifyTraceWildSettingsChanged()
       if (response.notice === 'capture-success') setNotice(t('captured'))
       if (response.notice === 'capture-failed') setNotice(t('captureFailed'))
       if (response.notice === 'battle-lost') setNotice(t('battleLost'))
-      if (response.notice === 'wild-defeated') setNotice(t('wildDefeated'))
+      if (response.notice === 'wild-defeated') setNotice(snapshot?.state.battle?.mode === 'expedition' ? zh ? '阶段完成，碎片与素材已入账。' : 'Stage cleared. Shards and materials banked.' : t('wildDefeated'))
       if (response.notice === 'tower-cleared') setNotice(t('towerCleared'))
       if (response.notice === 'material-used') setNotice(t('materialUsed'))
       if (response.notice === 'idle-claimed') setNotice(t('idleClaimed'))
@@ -823,6 +831,7 @@ export function TraceWildOverlay({ t: hostT }: TraceWildOverlayProps) {
     } catch (error) {
       setBattleTransition(undefined)
       const battleAction = action.type.startsWith('battle-') || action.type === 'capture'
+        || action.type.startsWith('expedition-')
         || action.type === 'flee' || action.type === 'start-battle' || action.type === 'start-tower'
       const companionAction = action.type === 'set-companion' || action.type === 'interact-companion' || action.type === 'read-companion-story'
       if (error instanceof TraceWildConnectionError && error.code === 'invalid-action') {
@@ -1031,10 +1040,12 @@ export function TraceWildOverlay({ t: hostT }: TraceWildOverlayProps) {
                   <CodekinMapView
                     state={state}
                     serverTime={snapshot?.serverTime ?? state.updatedAt}
+                    reducedMotion={reducedMotion}
                     t={t}
                     zh={zh}
                     busy={busy}
                     start={encounterId => act({ type: 'start-battle', encounterId })}
+                    act={act}
                   />
                 )}
                 {tab === 'tower' && (
@@ -1250,7 +1261,7 @@ function TowerView(props: {
           </div>
           <button
             type="button"
-            disabled={towerComplete || props.busy || !props.state.starterChosen || props.state.battle !== undefined}
+            disabled={towerComplete || props.busy || !props.state.starterChosen || props.state.battle !== undefined || expeditionActive(props.state)}
             onClick={props.start}
           >
             <span>{props.t('towerChallenge')}</span>
@@ -2081,7 +2092,7 @@ function BattleView(props: {
         <SignalMesh className={css.battleMesh} />
         <header className={css.battleHeader}>
           <div>
-            <h2>{battle.mode === 'tower' ? props.t('towerBattle') : props.t('battle')}</h2>
+            <h2>{battle.mode === 'expedition' ? props.zh ? '异常探索连战' : 'Anomaly Expedition' : battle.mode === 'tower' ? props.t('towerBattle') : props.t('battle')}</h2>
             <span>
               {battle.mode === 'tower' && `${props.t('towerFloor', { floor: battle.towerFloor ?? 1 })} · `}
               {props.t('round')} {battle.round} · {battle.turnOwner === 'boss'
@@ -2101,6 +2112,7 @@ function BattleView(props: {
           displayedWildHp={displayedWildHp} displayedWildShield={visibleWildShield}
           displayedPartyHp={displayedPartyHp} displayedPartyShield={visiblePartyShield}
           damage={damageReadout} attack={attackPresentation} />
+        {battle.expedition && <ExpeditionCombatPanel battle={battle} runId={battle.encounterId} supplies={props.state.expedition?.run?.supplies} zh={props.zh} busy={locked} reducedMotion={props.reducedMotion} act={props.act} />}
         <div className={css.matchBattleLayout}>
           <div className={css.partyColumn}>
             <div className={css.sharedPartyVitals}>
@@ -2352,6 +2364,7 @@ function BattleView(props: {
 
         </div>
         {infoOpen && <PanelDialog title={props.zh ? '战斗说明' : 'Battle guide'} closeLabel={props.t('closeCodekinDetail')} onClose={() => setInfoOpen(false)}>
+          {battle.expedition && <><h3>{props.zh ? '探索机制' : 'Expedition rules'}</h3><p>{expeditionStageHint(battle.expedition.stage, props.zh)}</p><p>{props.zh ? '胜利后自动保存阶段奖励。撤离或失败可以免费重试本场；请从地图的异常探索入口继续。' : 'Victory banks your stage rewards. Retry freely after a loss or retreat through the expedition entry on the map.'}</p></>}
           <p>{props.t('boardHelp')}</p>
           <p>{props.t(SIGNAL_RULE_KEYS[battle.turnOwner === 'boss' ? wild.ecology : activeDefinition.ecology])}</p>
           {battle.mode === 'tower' && <><h3>{props.t('towerNoCapture')}</h3><p>{props.t('towerBattleReward', { floor: battle.towerFloor ?? 1 })}</p>

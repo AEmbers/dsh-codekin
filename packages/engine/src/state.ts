@@ -116,7 +116,7 @@ export function updateDex(state: TraceWildState, creatureId: string, at: number,
 }
 
 export function purgeExpiredEncounters(state: TraceWildState, now: number): void {
-  const activeEncounter = state.battle?.mode === 'tower' ? undefined : state.battle?.encounterId
+  const activeEncounter = state.battle?.mode === 'wild' ? state.battle.encounterId : undefined
   state.encounters = state.encounters.filter(encounter => (
     encounter.id === activeEncounter || now < encounter.expiresAt
   ))

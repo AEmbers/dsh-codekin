@@ -4,6 +4,7 @@ import type { TraceEcology, TraceSignal } from '../../engine/src/types.ts'
 
 interface TurnTrace {
   turn: number
+  startedAt: number
   lumen: number
   forge: number
   relay: number
@@ -11,6 +12,7 @@ interface TurnTrace {
   failedTools: number
   toolCount: number
   callEcology: Map<string, TraceEcology>
+  completedChildren: Set<string>
 }
 
 interface SessionActivityClock {
@@ -19,7 +21,7 @@ interface SessionActivityClock {
 }
 
 function fresh(turn: number): TurnTrace {
-  return { turn, lumen: 0, forge: 0, relay: 0, aegis: 0, failedTools: 0, toolCount: 0, callEcology: new Map() }
+  return { turn, startedAt: 0, lumen: 0, forge: 0, relay: 0, aegis: 0, failedTools: 0, toolCount: 0, callEcology: new Map(), completedChildren: new Set() }
 }
 
 function classifyTool(name: string): TraceEcology {
@@ -32,7 +34,7 @@ function classifyTool(name: string): TraceEcology {
 
 function signalId(session: Session, event: SessionEvent<'turn/end'>): string {
   return createHash('sha256')
-    .update(`${String(session.id)}\0${String(event.data.turn)}\0${String(event.seq)}`)
+    .update(`${String(session.id)}\0${String(event.data.turn)}`)
     .digest('hex')
     .slice(0, 24)
 }
@@ -53,6 +55,8 @@ function failureVariant(reason: SessionEvent<'turn/end'>['data']['reason']): Tra
 export class TraceWildEventClassifier {
   private readonly traces = new WeakMap<Session, TurnTrace>()
   private readonly activity = new WeakMap<Session, SessionActivityClock>()
+  private readonly completedChildTurns = new Set<string>()
+  private childWatermark = 0
 
   observe(session: Session, event: SessionEvent): TraceSignal | undefined {
     // Session V3 can rewrite an earlier tool result during compaction. It is
@@ -61,7 +65,7 @@ export class TraceWildEventClassifier {
     const activeMinutes = this.observeActivity(session, event.time)
     switch (event.type) {
       case 'turn/start':
-        this.traces.set(session, fresh(event.data.turn))
+        this.traces.set(session, { ...fresh(event.data.turn), startedAt: event.time })
         return undefined
       case 'tool/call': {
         const trace = this.trace(session, event.data.turn)
@@ -108,6 +112,7 @@ export class TraceWildEventClassifier {
           intensity: Math.min(5, 1 + Math.floor(trace.toolCount / 3) + (trace.failedTools > 0 ? 2 : 0)),
           activeMinutes,
           enhanced: false,
+          collaboration: trace.completedChildren.size > 0,
         }
       }
       default:
@@ -116,10 +121,20 @@ export class TraceWildEventClassifier {
   }
 
   /** Fold child activity into its live top-level turn without ever minting a child reward. */
-  observeRelatedActivity(session: Session, event: SessionEvent): void {
+  observeRelatedActivity(session: Session, event: SessionEvent, child?: Session): void {
     if (event.type === 'tool/result' && event.surfaceOp !== 'append') return
     this.observeActivity(session, event.time)
     const trace = this.traces.get(session)
+    if (event.type === 'turn/end' && event.data.reason.kind === 'completed' && child !== undefined
+      && (child.header.parentSession !== undefined || child.header.origin === 'subagent')) {
+      const key = `${String(child.id)}:${event.data.turn}`
+      if (!this.completedChildTurns.has(key) && event.time >= this.childWatermark) {
+        this.completedChildTurns.add(key)
+        this.childWatermark = Math.max(this.childWatermark, event.time)
+        if (trace !== undefined && event.time >= trace.startedAt && trace.completedChildren.size < 32) trace.completedChildren.add(String(child.id))
+        while (this.completedChildTurns.size > 256) this.completedChildTurns.delete(this.completedChildTurns.values().next().value!)
+      }
+    }
     if (trace === undefined) return
     if (event.type === 'tool/call') {
       const ecology = classifyTool(event.data.name)

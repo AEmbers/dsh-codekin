@@ -1,4 +1,6 @@
 import { companionBond, companionInteractionReady, companionStoryUnlocked, selectedCompanion, COMPANION_BOND_LIMIT, COMPANION_INTERACTION_POINTS } from './companion.ts'
+import { EXPEDITION_BOSS, EXPEDITION_COST, EXPEDITION_FINAL_NODE, advanceExpeditionNode, bankExpeditionShards, emptySupplies, expeditionActive, expeditionCombat, expeditionContentId, expeditionProfile, expeditionRandom, initialExpedition, offerExpeditionPerks, settleExpeditionVictory } from './expedition.ts'
+import { EXPEDITION_BOSS_RULES, EXPEDITION_SHOP_ITEMS, isExpeditionBoss } from './expedition-catalog.ts'
 import {
   CAPTURE_CORE_QUALITIES,
   TRACE_ECOLOGIES,
@@ -434,6 +436,8 @@ function grantEnergy(member: BattlePartyMember, amount: number): void {
 
 function applyWildDamage(battle: BattleState, rawAmount: number, contributor?: BattlePartyMember): number {
   let amount = Math.max(1, Math.round(rawAmount))
+  if (battle.expedition?.perks.includes('module-piercer') && (battle.wildShield > 0 || battle.expedition.target !== 'core')) amount = Math.round(amount * 1.35)
+  if (battle.expedition?.heat === 1) { amount = Math.round(amount * 1.25); battle.expedition.heat = 0 }
   if (battle.enemyMarks > 0) {
     amount = Math.round(amount * (1 + battle.enemyMarks * 0.1))
     battle.enemyMarks = 0
@@ -458,6 +462,17 @@ function settleTeamStrike(battle: BattleState): boolean {
     .filter(member => member.stageDamage > 0)
     .map(member => ({ instanceId: member.instanceId, amount: Math.round(member.stageDamage) }))
   let remaining = pending
+  const expedition = battle.expedition
+  if (expedition?.stage === EXPEDITION_FINAL_NODE && expedition.target !== 'core') {
+    const key = expedition.target === 'shield' ? 'shieldHp' : 'interferenceHp'
+    const hit = Math.min(expedition[key], remaining)
+    expedition[key] -= hit
+    remaining -= hit
+    if (expedition[key] === 0) {
+      expedition.target = 'core'
+      if (key === 'interferenceHp' && battle.wildCreatureId === 'lumen-mirror-dreamer') delete expedition.mirror
+    }
+  }
   const absorbed = Math.min(battle.wildShield, remaining)
   battle.wildShield -= absorbed
   remaining -= absorbed
@@ -471,6 +486,12 @@ function settleTeamStrike(battle: BattleState): boolean {
   battle.pendingTeamDamage = 0
   for (const member of battle.party) member.stageDamage = 0
   if (pending > 0) appendBattleLog(battle, { turn: battle.turn, kind: 'team-strike', amount: applied })
+  if (expedition?.stage === EXPEDITION_FINAL_NODE && !expedition.overdrive && battle.wildHp > 0 && battle.wildHp * 2 <= battle.wildMaxHp) {
+    expedition.overdrive = true
+    battle.enemyPhase = 2
+    battle.wildAttack = Math.round(battle.wildAttack * 1.2)
+    appendBattleLog(battle, { turn: battle.turn, kind: 'phase-shift', amount: battle.wildHp })
+  }
   if (battle.wildHp > 0 && battle.enemyPhase === 1 && battle.wildHp * 2 <= battle.wildMaxHp
     && battle.bossSkillTier >= 5) {
     battle.enemyPhase = 2
@@ -594,12 +615,22 @@ function damageForStep(
         signalEffect = { kind: 'breach', ecology, amount: Math.max(1, Math.round(contribution - baseContribution)) }
       }
     }
+    contribution *= battle.expedition?.mirror === ecology ? 0.6 : 1
+    if (battle.expedition && contribution > 0) {
+      const damage = battle.expedition.roundDamage
+      damage[ecology] = Math.min(999_999_999, (damage[ecology] ?? 0) + Math.round(contribution))
+    }
     total += contribution
     if (contribution <= 0) continue
     const effectiveness: MatchDamageEffectiveness = element > 1 ? 'advantage' : element < 1 ? 'resisted' : 'neutral'
     effectivenessDamage[effectiveness] += contribution
   }
   total *= modifierContext.multiplier
+  if (battle.expedition !== undefined) {
+    const damage = battle.expedition.roundDamage
+    const strongest = TRACE_ECOLOGIES.reduce((best, ecology) => (damage[ecology] ?? 0) > (damage[best] ?? 0) ? ecology : best, 'lumen')
+    if ((damage[strongest] ?? 0) > 0) battle.expedition.lastEcology = strongest
+  }
   const effectiveness = total <= 0
     ? 'neutral'
     : (Object.entries(effectivenessDamage) as [MatchDamageEffectiveness, number][])
@@ -906,6 +937,7 @@ function applyResolution(
   const totals: Record<TraceEcology, number> = { lumen: 0, forge: 0, relay: 0, aegis: 0, glitch: 0 }
   const active = activeMember(battle)
   let totalDamage = 0
+  const chargeBefore = battle.party.map(member => member.energy)
   const armorBefore = battle.wildArmor
   for (let index = 0; index < resolution.steps.length; index += 1) {
     const step = resolution.steps[index]!
@@ -956,6 +988,42 @@ function applyResolution(
     appendBattleLog(battle, { turn: battle.turn, kind: 'armor-break' })
   }
   distributeEnergy(battle, totals)
+  const expedition = battle.expedition
+  if (expedition !== undefined && battle.partyHp > 0) {
+    const beforePerkDamage = battle.pendingTeamDamage
+    if (consumeRepeat && expedition.perks.includes('four-beacon') && (resolution.steps[0]?.maxGroup ?? 0) >= 4) {
+      const lowest = [...battle.party].sort((a, b) => a.energy - b.energy)[0]!
+      grantEnergy(lowest, 2)
+    }
+    if (consumeRepeat && expedition.perks.includes('blast-loop') && resolution.steps.some(step => step.specialCount >= 2)) applyRawHit(battle, active, 0.7)
+    if (consumeRepeat && expedition.perks.includes('prism-pulse') && (resolution.steps[0]?.maxGroup ?? 0) >= 5) applyRawHit(battle, active, 0.9)
+    if (consumeRepeat && expedition.perks.includes('steady-flow') && (resolution.steps[0]?.maxGroup ?? 0) >= 4) queuePartyHealing(battle, battle.partyMaxHp * 0.02)
+    if (consumeRepeat && expedition.perks.includes('shared-current') && TRACE_ECOLOGIES.filter(ecology => totals[ecology] > 0).length >= 3) for (const member of battle.party) grantEnergy(member, 1)
+    if (expedition.perks.includes('shield-heat') && battle.wildArmor < armorBefore) expedition.heat = 1
+    if (expedition.perks.includes('purify-wave')) {
+      const hazards = resolution.frames.reduce((sum, frame) => sum + frame.removed.filter(index => (frame.before[index]?.hazardActions ?? 0) > 0).length, 0)
+      if (hazards > 0) queuePartyHealing(battle, battle.partyMaxHp * Math.min(0.06, hazards * 0.02))
+    }
+    if (consumeRepeat && expedition.perks.includes('star-trace') && TRACE_ECOLOGIES.filter(ecology => totals[ecology] > 0).length >= 2) battle.enemyMarks = Math.min(3, battle.enemyMarks + 1)
+    if (expedition.perks.includes('backflow')) {
+      const sources = battle.party.filter((member, index) => chargeBefore[index]! < 12 && member.energy >= 12 && !expedition.overflowUsed.includes(member.instanceId))
+      for (const source of sources) {
+        expedition.overflowUsed.push(source.instanceId)
+        const recipient = battle.party.filter(member => member !== source).sort((a, b) => a.energy - b.energy)[0]
+        if (recipient) grantEnergy(recipient, 2)
+      }
+    }
+    // Guardian shields can be deliberately broken by a direct four-match.
+    if (expedition.stage === 0 && (resolution.steps[0]?.maxGroup ?? 0) >= 4) battle.wildShield = 0
+    applyExpeditionEmergency(battle)
+    const perkDamage = battle.pendingTeamDamage - beforePerkDamage
+    totalDamage += perkDamage
+    const frame = resolution.frames.at(-1)
+    if (frame && perkDamage > 0) {
+      frame.damage = (frame.damage ?? 0) + perkDamage
+      frame.totalDamage = battle.pendingTeamDamage
+    }
+  }
   if (consumeRepeat && battle.repeatPower > 0 && totalDamage > 0) {
     const repeated = applyWildDamage(battle, totalDamage * battle.repeatPower)
     totalDamage += repeated
@@ -979,6 +1047,12 @@ interface StageEntryMechanicContext {
 }
 
 const STAGE_ENTRY_HANDLERS: Readonly<Record<string, MechanicHandler<StageEntryMechanicContext>>> = {
+  'stage.relay-next': (binding, context) => {
+    const party = context.battle.party
+    const index = party.findIndex(member => member.instanceId === context.member.instanceId)
+    const next = party[(index + 1) % party.length]
+    if (next && next !== context.member) grantEnergy(next, mechanicNumber(binding, 'amount'))
+  },
   'stage.grant-energy': (binding, context) => {
     grantEnergy(context.member, mechanicNumber(binding, 'amount'))
   },
@@ -1348,6 +1422,37 @@ function performBossSettlement(battle: BattleState, random: RandomSource): boole
   // A defeated team must not receive a late board mutation or status effect.
   // This also keeps the final combat frame focused on the shared-HP knockout.
   if (battle.partyHp <= 0) return true
+  applyExpeditionEmergency(battle)
+  const expedition = battle.expedition
+  if (expedition !== undefined) {
+    if (expedition.stage === 0) queueWildShielding(battle, battle.wildMaxHp * .06)
+    if (expedition.stage === EXPEDITION_FINAL_NODE && expedition.shieldHp > 0) {
+      const guard = isExpeditionBoss(battle.wildCreatureId) ? EXPEDITION_BOSS_RULES[battle.wildCreatureId].guard : .06
+      queueWildShielding(battle, battle.wildMaxHp * guard * (expedition.overdrive ? 1.5 : 1))
+    }
+    if (expedition.stage === 4 && expedition.lastEcology !== undefined) expedition.mirror = expedition.lastEcology
+    expedition.roundDamage = {}
+    if (expedition.elite) installHazardTiles(battle, random)
+    if (expedition.stage === EXPEDITION_FINAL_NODE && expedition.interferenceHp > 0) {
+      switch (battle.wildCreatureId) {
+        case 'lumen-mirror-dreamer':
+          if (expedition.lastEcology !== undefined) expedition.mirror = expedition.lastEcology
+          break
+        case 'aegis-chain-warden': lockEnemyTiles(battle, random); break
+        case 'glitch-zero-hour':
+          for (const ally of battle.party) ally.energy = Math.max(0, ally.energy - (expedition.overdrive ? 2 : 1))
+          break
+        case 'glitch-reset-cantor':
+          battle.partyShield = expedition.overdrive ? 0 : Math.floor(battle.partyShield / 2)
+          battle.enemyMarks = 0
+          break
+        default: {
+          const batches = (battle.wildCreatureId === 'forge-dragon-empress' ? 2 : 1) + (expedition.overdrive ? 1 : 0)
+          for (let index = 0; index < batches; index += 1) installHazardTiles(battle, random)
+        }
+      }
+    }
+  }
 
   if (battle.bossSkillArmed) {
     battle.bossEnergy = Math.max(0, battle.bossEnergy - BOSS_SKILL_ENERGY_COST)
@@ -1451,7 +1556,7 @@ function installBattle(
     quality: CaptureCoreQuality
     armor: number
     stats: CreatureStats
-    mode: 'wild' | 'tower'
+    mode: BattleState['mode']
     bossSkillTier: 1 | 2 | 3 | 4 | 5
     startingBossEnergy: number
     towerFloor?: number
@@ -1533,7 +1638,7 @@ function installBattle(
 }
 
 function startBattle(state: TraceWildState, encounterId: string, now: number, random: RandomSource): void {
-  if (!state.starterChosen || state.battle !== undefined) throw new TraceWildRuleError('conflict')
+  if (!state.starterChosen || state.battle !== undefined || expeditionActive(state)) throw new TraceWildRuleError('conflict')
   const encounter = state.encounters.find(row => row.id === encounterId)
   if (encounter === undefined) throw new TraceWildRuleError('invalid-action')
   const wild = creatureById(encounter.creatureId)
@@ -1559,7 +1664,7 @@ function startBattle(state: TraceWildState, encounterId: string, now: number, ra
 }
 
 function startTowerBattle(state: TraceWildState, now: number, random: RandomSource): void {
-  if (!state.starterChosen || state.battle !== undefined) throw new TraceWildRuleError('conflict')
+  if (!state.starterChosen || state.battle !== undefined || expeditionActive(state)) throw new TraceWildRuleError('conflict')
   const floor = state.tower.highestClearedFloor + 1
   if (floor > MAX_TOWER_FLOOR) throw new TraceWildRuleError('conflict')
   const profile = towerFloorProfile(floor)
@@ -2092,6 +2197,13 @@ function castActiveSkill(state: TraceWildState, creatureInstanceId: string, rand
   }
   runMechanics(member.creatureId, 'skill:before', SKILL_BEFORE_HANDLERS, context)
   runMechanics(member.creatureId, 'skill:cast', SKILL_CAST_HANDLERS, context)
+  const expedition = battle.expedition
+  if (expedition?.perks.includes('relay-cache') && !expedition.relayUsed.includes(member.instanceId)) {
+    expedition.relayUsed.push(member.instanceId)
+    const index = battle.party.findIndex(ally => ally.instanceId === member.instanceId)
+    const recipient = battle.party[(index + 1) % battle.party.length]
+    if (recipient && recipient !== member) grantEnergy(recipient, 2)
+  }
   battle.lastPlayerDamage = Math.max(battle.lastPlayerDamage, context.damage)
   appendBattleLog(battle, {
     turn: battle.turn,
@@ -2276,6 +2388,7 @@ function awardTowerClear(state: TraceWildState, now: number, random: RandomSourc
 }
 
 function settleBattleVictory(state: TraceWildState, now: number, random: RandomSource): 'wild-defeated' | 'tower-cleared' {
+  if (state.battle?.mode === 'expedition') { settleExpeditionVictory(state); return 'wild-defeated' }
   if (state.battle?.mode === 'tower') {
     awardTowerClear(state, now, random)
     return 'tower-cleared'
@@ -2287,6 +2400,7 @@ function settleBattleVictory(state: TraceWildState, now: number, random: RandomS
 function logBattleDefeat(state: TraceWildState, now: number, random: RandomSource): void {
   const battle = state.battle
   if (battle === undefined) return
+  if (battle.mode === 'expedition' && state.expedition?.run) state.expedition.run.phase = 'failed'
   const encounter = battle.mode === 'wild'
     ? state.encounters.find(row => row.id === battle.encounterId)
     : undefined
@@ -2299,6 +2413,168 @@ function logBattleDefeat(state: TraceWildState, now: number, random: RandomSourc
     ...(creatureId === undefined ? {} : { creatureId }),
     ...(ecology === undefined ? {} : { ecology }),
   }, random)
+}
+
+function applyExpeditionEmergency(battle: BattleState): void {
+  const combat = battle.expedition
+  if (combat?.perks.includes('last-reserve') && !combat.emergencyUsed && battle.partyHp > 0 && battle.partyHp < battle.partyMaxHp * 0.35) {
+    combat.emergencyUsed = true
+    healParty(battle, battle.partyMaxHp * 0.12)
+  }
+}
+
+function startExpeditionStage(state: TraceWildState, now: number): void {
+  const run = state.expedition!.run!
+  const profile = expeditionProfile(run)
+  const party = createBattleParty({ ...state, squad: run.party.map(member => member.instanceId) })
+  for (const member of party) member.energy = run.party.find(previous => previous.instanceId === member.instanceId)?.energy ?? 0
+  installBattle(state, { encounterId: run.id, wildCreatureId: profile.creatureId, level: profile.level, quality: profile.quality,
+    armor: run.stage === 0 ? 1 : 0, stats: profile.stats, mode: 'expedition', bossSkillTier: 1, startingBossEnergy: 0 }, party, now, expeditionRandom(run))
+  const battle = state.battle!
+  battle.partyHp = run.hp
+  battle.expedition = expeditionCombat(run, battle)
+  if (run.perks.includes('reserve-barrier')) shieldParty(battle, battle.partyMaxHp * 0.12)
+  if (run.perks.includes('quick-boot')) for (const member of party) grantEnergy(member, 3)
+  if (run.route === 'safe-bridge' && run.stage === 2) shieldParty(battle, battle.partyMaxHp * 0.1)
+  if (run.route === 'unstable-bridge' && run.stage === 2) {
+    battle.board[27]!.special = 'burst'
+    installHazardTiles(battle, expeditionRandom(run))
+  }
+  if (run.finalPlan === 'beacon' && run.stage === EXPEDITION_FINAL_NODE) {
+    for (const member of party) grantEnergy(member, 3)
+    battle.board[27]!.special = 'burst'
+  }
+  syncLegacyPartyHealth(battle)
+  run.phase = 'battle'
+  run.checkpoint = structuredClone(battle)
+  run.checkpointRng = run.rng
+  run.checkpointSupplies = { ...run.supplies }
+}
+
+function performExpeditionAction(state: TraceWildState, action: TraceWildAction, now: number, random: RandomSource): void {
+  const data = state.expedition ??= initialExpedition()
+  if (action.type === 'expedition-recruit') {
+    const bossId = action.bossId ?? EXPEDITION_BOSS
+    if (!isExpeditionBoss(bossId)) throw new TraceWildRuleError('invalid-action')
+    if (data.recruitedBosses.includes(bossId)) return
+    if (state.battle || expeditionActive(state) || !data.unlockedBosses.includes(bossId) || data.shards < EXPEDITION_COST || state.creatures.length >= MAX_CREATURES) throw new TraceWildRuleError('conflict')
+    const boss = creatureById(bossId)
+    if (!boss) throw new TraceWildRuleError('conflict')
+    addCapturedCreature(state, bossId, boss.ecology, 'prism', 1, now, random)
+    data.shards -= EXPEDITION_COST
+    data.recruitedBosses.push(bossId)
+    data.recruited = data.recruitedBosses.includes(EXPEDITION_BOSS)
+    return
+  }
+  if (action.type === 'expedition-shop-buy') {
+    const item = EXPEDITION_SHOP_ITEMS.find(item => item.id === action.itemId)
+    if (!item || !Number.isInteger(action.count) || action.count < 1 || action.count > 99 || !/^shop_[a-z0-9_-]{8,64}$/.test(action.purchaseId)) throw new TraceWildRuleError('invalid-action')
+    if (data.shopReceipts.includes(action.purchaseId)) return
+    const cost = item.cost * action.count
+    if (state.battle || expeditionActive(state) || data.shards < cost || state.materials[item.quality] + action.count > 9999) throw new TraceWildRuleError('conflict')
+    data.shards -= cost
+    state.materials[item.quality] += action.count
+    state.stats.materialsEarned += action.count
+    data.shopReceipts = [...data.shopReceipts, action.purchaseId].slice(-64)
+    return
+  }
+  if (action.type === 'expedition-start') {
+    if (!state.starterChosen || state.battle || expeditionActive(state)) throw new TraceWildRuleError('conflict')
+    const event = data.events.find(event => event.id === action.eventId)
+    if (!event || !creatureById(EXPEDITION_BOSS)) throw new TraceWildRuleError('invalid-action')
+    const party = createBattleParty(state)
+    const maxHp = party.reduce((sum, member) => sum + member.maxHp, 0)
+    data.run = { id: randomId('run', now, random), version: 3, content: expeditionContentId(), event, rng: event.seed,
+      phase: 'ready', stage: 0, party, maxHp, hp: maxHp, perks: [], offers: [], rewards: [], completed: [], choices: {}, supplies: { ...emptySupplies(), shuffle: 1 }, shards: 0, materials: 0 }
+    data.events = data.events.filter(item => item.id !== event.id)
+    data.recoveryNotice = false
+    return
+  }
+  const run = data.run
+  if (!run || !('runId' in action) || action.runId !== run.id) throw new TraceWildRuleError('conflict')
+  switch (action.type) {
+    case 'expedition-leave':
+      if (state.battle?.mode === 'expedition') delete state.battle
+      delete data.run
+      return
+    case 'expedition-continue':
+      if (run.phase !== 'ready' || state.battle || run.rewards.includes(run.stage)) throw new TraceWildRuleError('conflict')
+      startExpeditionStage(state, now)
+      return
+    case 'expedition-retry':
+      if (run.phase !== 'failed' || state.battle || !run.checkpoint || run.checkpointRng === undefined || !run.checkpointSupplies) throw new TraceWildRuleError('conflict')
+      state.battle = structuredClone(run.checkpoint)
+      run.rng = run.checkpointRng
+      run.supplies = { ...run.checkpointSupplies }
+      run.phase = 'battle'
+      return
+    case 'expedition-perk':
+      if (run.phase !== 'upgrade' || !run.offers.includes(action.perk) || run.perks.includes(action.perk)) throw new TraceWildRuleError('invalid-action')
+      if (run.replacePerk) run.perks = run.perks.filter(perk => perk !== run.replacePerk)
+      delete run.replacePerk
+      run.perks.push(action.perk)
+      run.offers = []
+      advanceExpeditionNode(run)
+      return
+    case 'expedition-route':
+      if (run.phase !== 'route' || run.stage !== 2 || !['safe-bridge', 'unstable-bridge'].includes(action.route)) throw new TraceWildRuleError('invalid-action')
+      run.route = action.route
+      run.choices[run.stage] = action.route
+      run.phase = 'ready'
+      return
+    case 'expedition-node-choice': {
+      if (run.phase !== 'event' || state.battle || action.node !== run.stage || run.completed.includes(run.stage)) throw new TraceWildRuleError('conflict')
+      const valid = run.stage === 1 ? ['cache-repair', 'cache-charge', 'cache-salvage'] : run.stage === 3 ? ['workshop-install', 'workshop-reforge', 'workshop-stock'] : run.stage === 5 ? ['camp-repair', 'camp-beacon', 'camp-sabotage'] : []
+      if (!valid.includes(action.choice) || action.replace !== undefined && action.choice !== 'workshop-reforge') throw new TraceWildRuleError('invalid-action')
+      const gain = (kind: keyof typeof run.supplies, amount = 1) => { run.supplies[kind] = Math.min(9, run.supplies[kind] + amount) }
+      const repair = (ratio: number) => { run.hp = Math.min(run.maxHp, run.hp + Math.round(run.maxHp * ratio)) }
+      const cost = action.choice === 'cache-salvage' ? Math.ceil(run.maxHp * .12) : action.choice === 'workshop-install' ? Math.ceil(run.maxHp * .15) : 0
+      if (run.hp <= cost) throw new TraceWildRuleError('conflict')
+      if (action.choice === 'workshop-reforge' && (!action.replace || !run.perks.includes(action.replace))) throw new TraceWildRuleError('invalid-action')
+      run.hp -= cost
+      run.choices[run.stage] = action.choice
+      switch (action.choice) {
+        case 'cache-repair': repair(.2); gain('cleanse'); break
+        case 'cache-charge': for (const member of run.party) member.energy = Math.min(12, member.energy + 2); gain('burst'); break
+        case 'cache-salvage': bankExpeditionShards(state, 6); gain('shuffle'); break
+        case 'workshop-stock': gain('shuffle'); gain('cleanse'); break
+        case 'workshop-reforge': run.replacePerk = action.replace!; break
+        case 'camp-repair': repair(.3); run.finalPlan = 'repair'; gain('cleanse'); break
+        case 'camp-beacon': run.finalPlan = 'beacon'; gain('burst'); break
+        case 'camp-sabotage': run.finalPlan = 'sabotage'; break
+      }
+      if (action.choice === 'workshop-install' || action.choice === 'workshop-reforge') { offerExpeditionPerks(run); run.phase = 'upgrade' }
+      else advanceExpeditionNode(run)
+      return
+    }
+    case 'expedition-support': {
+      const battle = state.battle, combat = battle?.expedition
+      if (run.phase !== 'battle' || !battle || !combat || battle.turnOwner !== 'player' || battle.actionsRemaining <= 0 || combat.supportUsed || (run.supplies[action.support] ?? 0) <= 0) throw new TraceWildRuleError('conflict')
+      run.supplies[action.support] -= 1
+      combat.supportUsed = true
+      if (action.support === 'shuffle') {
+        const previous = battle.board
+        battle.board = reshuffleBattleBoard(previous, expeditionRandom(run))
+        for (const [index, tile] of battle.board.entries()) {
+          if (previous[index]!.hazardActions !== undefined) tile.hazardActions = previous[index]!.hazardActions
+          if (previous[index]!.lockedActions !== undefined) tile.lockedActions = previous[index]!.lockedActions
+        }
+      }
+      else if (action.support === 'cleanse') {
+        for (const tile of battle.board) { delete tile.hazardActions; delete tile.lockedActions }
+        healParty(battle, battle.partyMaxHp * .06)
+      } else battle.board[27]!.special = 'burst'
+      return
+    }
+    case 'expedition-target': {
+      const battle = state.battle
+      if (run.phase !== 'battle' || !battle?.expedition || battle.expedition.stage !== EXPEDITION_FINAL_NODE || battle.turnOwner !== 'player' || battle.pendingTeamDamage > 0
+        || action.target === 'shield' && battle.expedition.shieldHp <= 0 || action.target === 'interference' && battle.expedition.interferenceHp <= 0) throw new TraceWildRuleError('conflict')
+      battle.expedition.target = action.target
+      return
+    }
+    default: throw new TraceWildRuleError('invalid-action')
+  }
 }
 
 export function applyTraceWildAction(
@@ -2320,6 +2596,12 @@ export function applyTraceWildAction(
     return { state: commit(next, now) }
   }
   if (!current.enabled) throw new TraceWildRuleError('conflict')
+  if (action.type.startsWith('expedition-')) {
+    const next = structuredClone(current)
+    performExpeditionAction(next, action, now, random)
+    return { state: commit(next, now) }
+  }
+  if (expeditionActive(current) && ['feed-material', 'release-creature', 'set-squad'].includes(action.type)) throw new TraceWildRuleError('conflict')
   if (action.type === 'set-companion' || action.type === 'interact-companion' || action.type === 'read-companion-story') {
     if (!current.creatures.some(row => row.instanceId === action.creatureInstanceId)) throw new TraceWildRuleError('invalid-action')
     const bond = companionBond(current, action.creatureInstanceId)
@@ -2345,7 +2627,8 @@ export function applyTraceWildAction(
     const creature = current.creatures.find(row => row.instanceId === action.creatureInstanceId)
     if (creature === undefined
       || !['original', 'evolved', 'ultimate'].includes(action.appearance)
-      || (action.appearance === 'evolved' && creature.level < CREATURE_EVOLUTION_LEVEL)
+      || (action.appearance === 'evolved' && (creature.level < CREATURE_EVOLUTION_LEVEL
+        || !currentEngineContent().hasEvolvedAppearance(creature.creatureId)))
       || (action.appearance === 'ultimate' && (creature.level < CREATURE_ULTIMATE_LEVEL
         || !currentEngineContent().hasUltimateAppearance(creature.creatureId)))) {
       throw new TraceWildRuleError('invalid-action')
@@ -2361,6 +2644,7 @@ export function applyTraceWildAction(
   }
   const settled = settleTraceWildIdleRewards(current, now, random)
   const next = structuredClone(settled)
+  if (next.battle?.mode === 'expedition' && next.expedition?.run) random = expeditionRandom(next.expedition.run)
   purgeExpiredEncounters(next, now)
   let notice: 'capture-success' | 'capture-failed' | 'battle-lost' | 'wild-defeated' | 'tower-cleared' | 'skill-cast' | 'material-used' | 'idle-claimed' | 'creature-released' | undefined
   let animation: TraceWildBattleAnimation | undefined
@@ -2468,6 +2752,7 @@ export function applyTraceWildAction(
     }
     case 'flee':
       if (next.battle === undefined) throw new TraceWildRuleError('conflict')
+      if (next.battle.mode === 'expedition' && next.expedition?.run) next.expedition.run.phase = 'failed'
       delete next.battle
       break
     case 'feed-material': {
@@ -2485,7 +2770,8 @@ export function applyTraceWildAction(
         creature.xp + MATERIAL_XP[action.quality] * action.count,
       )
       creature.level = levelForXp(creature.xp, creature.quality)
-      if (previousLevel < CREATURE_EVOLUTION_LEVEL && creature.level >= CREATURE_EVOLUTION_LEVEL) {
+      if (previousLevel < CREATURE_EVOLUTION_LEVEL && creature.level >= CREATURE_EVOLUTION_LEVEL
+        && currentEngineContent().hasEvolvedAppearance(creature.creatureId)) {
         creature.appearance = 'evolved'
       }
       if (previousLevel < CREATURE_ULTIMATE_LEVEL && creature.level >= CREATURE_ULTIMATE_LEVEL
@@ -2500,7 +2786,8 @@ export function applyTraceWildAction(
       if (next.battle !== undefined || next.creatures.length <= 1) throw new TraceWildRuleError('conflict')
       const creatureIndex = next.creatures.findIndex(row => row.instanceId === action.creatureInstanceId)
       const released = next.creatures[creatureIndex]
-      if (creatureIndex < 0 || released === undefined || next.materials[released.quality] >= 9999) {
+      if (creatureIndex < 0 || released === undefined || next.materials[released.quality] >= 9999
+        || creatureById(released.creatureId)?.combatRole === 'expedition-recruit') {
         throw new TraceWildRuleError('invalid-action')
       }
       next.creatures.splice(creatureIndex, 1)

@@ -9,6 +9,7 @@ import {
 import { CREATURE_SKILLS } from './skills.ts'
 import { CORE_CREATURE_MECHANICS } from './mechanics.ts'
 import { CORE_COMPANIONS } from './companions.ts'
+import { EXPEDITION_CREATURES, EXPEDITION_SKILLS, EXPEDITION_MECHANICS } from './bosses.ts'
 
 export * from './catalog.ts'
 export * from './skills.ts'
@@ -52,7 +53,7 @@ export const CORE_CONTENT_PACK = defineContentPack({
     tileRole: ECOLOGY_ROLES[id],
   })),
   qualities: CAPTURE_CORE_QUALITIES.map((id, order) => ({ id, order, name: QUALITY_NAMES[id] })),
-  creatures: CREATURE_CATALOG.map(creature => ({
+  creatures: [...CREATURE_CATALOG.map(creature => ({
     number: creature.number,
     id: creature.id,
     name: { zhCN: creature.nameZh, en: creature.nameEn },
@@ -64,8 +65,8 @@ export const CORE_CONTENT_PACK = defineContentPack({
     sprite: `creature:${creature.id}:sprite`,
     stats: creature.stats,
     ...(CORE_COMPANIONS[creature.id] === undefined ? {} : { companion: CORE_COMPANIONS[creature.id]! }),
-  })),
-  skills: CREATURE_SKILLS.map(skill => ({
+  })), ...EXPEDITION_CREATURES],
+  skills: [...CREATURE_SKILLS.map(skill => ({
     creatureId: skill.creatureId,
     energyCost: skill.energyCost,
     passive: {
@@ -76,12 +77,13 @@ export const CORE_CONTENT_PACK = defineContentPack({
       name: { zhCN: skill.activeNameZh, en: skill.activeNameEn },
       description: { zhCN: skill.activeDescriptionZh, en: skill.activeDescriptionEn },
     },
-  })),
-  mechanics: CORE_CREATURE_MECHANICS,
+  })), ...EXPEDITION_SKILLS],
+  mechanics: [...CORE_CREATURE_MECHANICS, ...EXPEDITION_MECHANICS],
   encounters: { variants: SIGNAL_VARIANT_CREATURE_IDS },
   starters: [...STARTER_CREATURE_IDS],
   tower: { rotation: CREATURE_CATALOG.map(creature => creature.id) },
   assets: [
+    ...EXPEDITION_CREATURES.map(boss => ({ key: boss.sprite, path: `bosses/${boss.id}.webp`, mime: 'image/webp' as const, kind: 'creature' as const })),
     { key: 'launcher:default', path: 'sprites/codekin-launcher-v2.webp', mime: 'image/webp', kind: 'launcher' },
     ...CREATURE_CATALOG.map(creature => ({
       key: `creature:${creature.id}:sprite`,

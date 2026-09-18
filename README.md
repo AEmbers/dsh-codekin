@@ -6,6 +6,8 @@ Codekin is a creature-collection and match-three battle plugin for DeepSeek Harn
 
 ## In-game preview
 
+Development branch `feat/event-expeditions` adds **Unknown Expeditions**: collect six clues from completed DSH activity to open a seven-node route with four battles, supply choices, a recompile forge and a final camp. Build with 15 perks, choose an optional elite route, and use limited Shuffle, Cleanse or Burst supports. One of six glitch-style Bosses is revealed only at the seventh node, with distinct interference modules. Free retries preserve that encounter and restore battle-entry state and supplies. Defeating her permanently adds that specific Boss to the recruitment shop for 120 shards. The shop also sells Pulse / Prism / Nova XP chips for 4 / 9 / 22 shards (+100 / 250 / 650 XP), usable through the existing creature upgrade screen. All six have playable skills; Fork Queen also has authored lounge lines and three bond stories. This work is not included in the published `0.3.9-rc.1` release below.
+
 Actual Codekin `0.3.9-rc.1` screens captured in an isolated demonstration profile on DSH `0.1.5-rc.1`, with `dsh-web 0.3.23` installed. The demonstration roster includes unlocked appearances; new saves start with the normal starter and progression.
 
 <p align="center">

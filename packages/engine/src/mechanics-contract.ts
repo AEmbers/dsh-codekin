@@ -44,6 +44,7 @@ export const CODEKIN_MECHANIC_CONTRACTS: Readonly<Record<string, OpcodeContract>
   'match.erode-protection': contract('match:after', { ecology: 'string', armor: 'number', shieldAttackRatio: 'number' }),
   'energy.share': contract('energy:after-distribute', { ecology: 'string', ratio: 'number', maximumSource: 'number', excludeEcology: 'boolean' }),
   'stage.grant-energy': contract('stage:enter', { amount: 'number' }),
+  'stage.relay-next': contract('stage:enter', { amount: 'number' }),
   'stage.shield': contract('stage:enter', { basis: 'string', ratio: 'number' }),
   'defeat.prevent': contract('defeat:before', { hp: 'number', shieldRatio: 'number', once: 'string' }),
   'runtime.delay-enemy': contract('runtime:threshold', { belowRatio: 'number', actions: 'number', once: 'string' }),

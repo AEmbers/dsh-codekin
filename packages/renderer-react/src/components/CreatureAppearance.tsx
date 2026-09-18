@@ -94,7 +94,7 @@ export function CreatureAppearancePicker(props: {
   }, [])
   const evolvedAvailable = contentAssetUrl(`creature:${props.creature.id}:evolved`) !== undefined
   const ultimateAvailable = props.creature.rarity === 'apex' && contentAssetUrl(`creature:${props.creature.id}:ultimate`) !== undefined
-  const appearances: CreatureAppearance[] = ultimateAvailable ? ['original', 'evolved', 'ultimate'] : ['original', 'evolved']
+  const appearances: CreatureAppearance[] = ['original', ...(evolvedAvailable ? ['evolved' as const] : []), ...(ultimateAvailable ? ['ultimate' as const] : [])]
   return <section className={css.picker} id="codekin-appearance-picker" role="region" aria-label={props.t('appearanceTitle')}
     onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); props.onClose() } }}>
     <header><div>{!props.inDialog && <strong>{props.t('appearanceTitle')}</strong>}<small>{props.t(props.battleActive ? 'appearanceBattleLocked' : 'appearanceHint')}</small></div>

@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { WebRoute } from '@deepseek-ai/dsh-host-webserver'
@@ -60,14 +61,46 @@ function securityHeaders(): Record<string, string> {
   }
 }
 
+interface PublishedAsset {
+  body: Buffer
+  mime: string
+  revision: string
+  immutable: boolean
+}
+interface PublishedContent {
+  view: CodekinContentView
+  assets: ReadonlyMap<string, PublishedAsset>
+}
+
+/** Pin each image URL to the actual bytes, even when a local build keeps its package version. */
+async function publishContentAssets(directory: string, content: CodekinContentView): Promise<PublishedContent> {
+  const assets = new Map<string, PublishedAsset>()
+  const definitions = await Promise.all(content.assets.map(async asset => {
+    try {
+      const body = await readFile(join(directory, asset.path))
+      const revision = createHash('sha256').update(body).digest('hex')
+      const path = `v/${revision}/${asset.path}`
+      // Keep bytes with the revision so a file replaced during this Host lifetime
+      // cannot accidentally serve new bytes under an immutable old URL.
+      assets.set(path, { body, mime: asset.mime, revision, immutable: true })
+      assets.set(asset.path, { body, mime: asset.mime, revision, immutable: false })
+      return { ...asset, path }
+    } catch {
+      // A missing portrait must not prevent the rest of the game from loading.
+      return asset
+    }
+  }))
+  return { view: { ...content, assets: definitions }, assets }
+}
+
 function contentRoute(
-  content: CodekinContentView,
+  published: () => Promise<PublishedContent>,
   lifecycle: TraceWildRouteLifecycle,
 ): WebRoute {
   return {
     kind: 'exact',
     path: `${TRACEWILD_API_PREFIX}/content`,
-    handler(req, res) {
+    async handler(req, res) {
       if (rejectUntrusted(req, res)) return
       if (req.method !== 'GET') {
         res.writeHead(405, securityHeaders())
@@ -78,7 +111,9 @@ function contentRoute(
         failure(res, 503, 'unavailable')
         return
       }
-      sendJson(res, 200, content)
+      const content = await published()
+      if (lifecycle.signal.aborted) { failure(res, 503, 'unavailable'); return }
+      sendJson(res, 200, content.view)
     },
   }
 }
@@ -382,8 +417,7 @@ function eventsRoute(
 }
 
 function assetRoute(
-  assetDirectory: string,
-  assetFiles: ReadonlyMap<string, string>,
+  published: () => Promise<PublishedContent>,
   lifecycle: TraceWildRouteLifecycle,
 ): WebRoute {
   return {
@@ -402,24 +436,27 @@ function assetRoute(
       }
       const pathname = new URL(req.url ?? '/', 'http://tracewild.invalid').pathname
       const filename = pathname.slice(`${TRACEWILD_API_PREFIX}/assets/`.length)
-      const mime = assetFiles.get(filename)
-      if (mime === undefined) {
+      const asset = (await published()).assets.get(filename)
+      if (lifecycle.signal.aborted) { failure(res, 503, 'unavailable'); return }
+      if (asset === undefined) {
         res.writeHead(404, securityHeaders())
         res.end()
         return
       }
       try {
-        const body = await readFile(join(assetDirectory, filename))
+        const { body, mime, revision, immutable } = asset
         if (lifecycle.signal.aborted) {
           failure(res, 503, 'unavailable')
           return
         }
-        res.writeHead(200, {
+        const headers = {
           ...securityHeaders(),
-          'cache-control': 'public, max-age=86400, immutable',
+          'cache-control': immutable ? 'public, max-age=86400, immutable' : 'no-cache',
+          etag: `"${revision}"`,
           'content-type': mime,
-          'content-length': String(body.byteLength),
-        })
+        }
+        if (req.headers['if-none-match'] === headers.etag) { res.writeHead(304, headers); res.end(); return }
+        res.writeHead(200, { ...headers, 'content-length': String(body.byteLength) })
         res.end(body)
       } catch {
         res.writeHead(404, securityHeaders())
@@ -435,15 +472,16 @@ export function createTraceWildRoutes(
   content: CodekinContentView,
 ): TraceWildRouteGroup {
   const lifecycle = new TraceWildRouteLifecycle()
-  const assetFiles = new Map(content.assets.map(asset => [asset.path, asset.mime]))
+  let snapshot: Promise<PublishedContent> | undefined
+  const published = () => snapshot ??= publishContentAssets(assetDirectory, content)
   return {
     routes: [
       stateRoute(service, lifecycle),
-      contentRoute(content, lifecycle),
+      contentRoute(published, lifecycle),
       actionRoute(service, lifecycle),
       saveRoute(service, lifecycle),
       eventsRoute(service, lifecycle),
-      assetRoute(assetDirectory, assetFiles, lifecycle),
+      assetRoute(published, lifecycle),
     ],
     close: () => { lifecycle.close() },
   }

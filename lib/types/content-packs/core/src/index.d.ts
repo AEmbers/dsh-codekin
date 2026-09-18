@@ -49,7 +49,7 @@ export declare const CORE_CONTENT_PACK: {
             readonly en: "Origin";
         };
     }[];
-    readonly creatures: {
+    readonly creatures: readonly (import("../../../packages/content-sdk/src/types.ts").ContentCreatureDefinition | {
         companion?: import("../../../packages/content-sdk/src/types.ts").ContentCompanionProfile;
         number: number;
         id: string;
@@ -64,8 +64,8 @@ export declare const CORE_CONTENT_PACK: {
         signatureProtocol: string;
         sprite: string;
         stats: import("../../../src/core-runtime.ts").CreatureStats;
-    }[];
-    readonly skills: {
+    })[];
+    readonly skills: readonly (import("../../../packages/content-sdk/src/types.ts").ContentSkillDefinition | {
         creatureId: string;
         energyCost: number;
         passive: {
@@ -88,7 +88,7 @@ export declare const CORE_CONTENT_PACK: {
                 en: string;
             };
         };
-    }[];
+    })[];
     readonly mechanics: readonly import("../../../packages/content-sdk/src/types.ts").ContentCreatureMechanicsDefinition[];
     readonly encounters: {
         readonly variants: Readonly<Record<string, string>>;
@@ -97,31 +97,36 @@ export declare const CORE_CONTENT_PACK: {
     readonly tower: {
         readonly rotation: string[];
     };
-    readonly assets: readonly [{
+    readonly assets: readonly ({
+        key: string;
+        path: string;
+        mime: "image/webp";
+        kind: "creature";
+    } | {
+        key: string;
+        path: string;
+        mime: "image/webp";
+        kind: "creature";
+    } | {
+        key: string;
+        path: string;
+        mime: "image/webp";
+        kind: "creature";
+    } | {
+        key: string;
+        path: string;
+        mime: "image/webp";
+        kind: "creature";
+    } | {
+        key: string;
+        path: string;
+        mime: "image/webp";
+        kind: "creature";
+    } | {
         readonly key: "launcher:default";
         readonly path: "sprites/codekin-launcher-v2.webp";
         readonly mime: "image/webp";
         readonly kind: "launcher";
-    }, ...({
-        key: string;
-        path: string;
-        mime: "image/webp";
-        kind: "creature";
-    } | {
-        key: string;
-        path: string;
-        mime: "image/webp";
-        kind: "creature";
-    } | {
-        key: string;
-        path: string;
-        mime: "image/webp";
-        kind: "creature";
-    } | {
-        key: string;
-        path: string;
-        mime: "image/webp";
-        kind: "creature";
-    })[]];
+    })[];
 };
 //# sourceMappingURL=index.d.ts.map

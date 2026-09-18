@@ -63,11 +63,11 @@ function PortraitPicture(props: { creatureId: string; look: CreatureLook; frame:
   }, [silhouette])
   if (creature === undefined) return null
   const sprite = <CreatureSprite creature={creature} captured={props.look} priority={props.frame === 'body' ? 'high' : 'auto'} eager />
-  if (!ultimate) return sprite
+  if (!ultimate && creature.combatRole !== 'expedition-recruit') return sprite
   const framing = battlePortraitFraming(props.creatureId, props.frame)
   // A missing/pending CSS mask is transparent. Keep the scene at full brightness until it is decoded.
   return <>
-    <span className={`${css.portraitCrop} ${maskReady ? css.portraitScene : ''}`} data-silhouette-ready={maskReady}
+    <span className={`${css.portraitCrop} ${maskReady ? css.portraitScene : ''}`} data-silhouette-ready={maskReady} data-single-form={creature.combatRole === 'expedition-recruit' || undefined}
       data-portrait-crop={props.frame} style={framing}>{sprite}</span>
     {maskReady && <span className={css.portraitGlow}>
       <span className={css.portraitCrop} data-portrait-crop={props.frame} style={framing}>
@@ -122,7 +122,7 @@ export function BattleStage(props: BattleStageProps) {
     const creature = enemy ? wild : creatureById(member.creatureId)
     if (creature === undefined) return null
     const look = enemy ? { level: battle.wildLevel } : props.creatures?.find(value => value.instanceId === member.instanceId) ?? member
-    const appearance = resolveCreatureSprite(creature.id, look).appearance
+    const appearance = creature.combatRole === 'expedition-recruit' ? 'ultimate' : resolveCreatureSprite(creature.id, look).appearance
     const skill = skillByCreatureId(creature.id)
     const id = enemy ? 'enemy' : member.instanceId
     const detailId = `combat-${battle.id}-${id}`

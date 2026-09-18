@@ -17,6 +17,7 @@ import type {
   TraceWildSnapshot,
 } from '../../../engine/src/types.ts'
 import { creatureById, skillByCreatureId } from '../content.ts'
+import { expeditionActive } from '../../../engine/src/expedition.ts'
 import type { TraceWildLocaleKey } from '../locales.ts'
 import {
   arrangeCodekinRoster,
@@ -153,7 +154,7 @@ export function CodekinView(props: {
                   {props.t('rosterClassify')}
                   {activeFilterCount > 0 && <b>{activeFilterCount}</b>}
                 </button>
-                <button type="button" disabled={props.busy} onClick={beginEditing}>{props.t('editSquad')}</button>
+                <button type="button" disabled={props.busy || expeditionActive(props.state)} title={expeditionActive(props.state) ? props.zh ? '探索中队伍已固定，请先结束探索。' : 'The expedition squad is fixed. Finish the run first.' : undefined} onClick={beginEditing}>{props.t('editSquad')}</button>
               </>}
         </div>
       </div>
@@ -427,14 +428,14 @@ export function CodekinDetailModal(props: {
           <div className={css.growthXpTrack} aria-hidden="true">
             <i style={{ width: `${progressPercent}%` }} />
           </div>
-          <p>{props.t('growthMaterialChoice')}</p>
+          <p>{expeditionActive(props.state) ? props.zh ? '探索期间队伍等级固定，结束本次探索后可继续培养。' : 'Levels stay fixed during an expedition. Finish this run to continue training.' : props.t('growthMaterialChoice')}</p>
           <div className={css.codekinGrowthActions}>
             {CAPTURE_CORE_QUALITIES.map(quality => (
               <button
                 key={quality}
                 type="button"
                 className={css[`core_${quality}`]}
-                disabled={props.busy || appearanceChanging || props.captured.level >= MAX_PLAYER_LEVEL || props.state.materials[quality] <= 0}
+                disabled={props.busy || appearanceChanging || expeditionActive(props.state) || props.captured.level >= MAX_PLAYER_LEVEL || props.state.materials[quality] <= 0}
                 onClick={() => { void props.act({ type: 'feed-material', creatureInstanceId: props.captured.instanceId, quality, count: 1 }).then(response => {
                   const next = response?.state.creatures.find(owned => owned.instanceId === props.captured.instanceId)
                   if (next !== undefined && ((props.captured.level < 30 && next.level >= 30) || (props.captured.level < 60 && next.level >= 60))) setDetailOpen(undefined)
@@ -455,8 +456,8 @@ export function CodekinDetailModal(props: {
           <button
             type="button"
             className={css.codekinReleaseFromDetail}
-            disabled={props.busy || props.state.creatures.length <= 1}
-            title={props.state.creatures.length <= 1 ? props.t('releaseLastBlocked') : props.t('releaseCreature')}
+            disabled={props.busy || props.state.creatures.length <= 1 || expeditionActive(props.state) || props.creature.combatRole === 'expedition-recruit'}
+            title={props.creature.combatRole === 'expedition-recruit' ? props.zh ? '首领只能招募一次，无法放生。' : 'This Boss can only be recruited once and cannot be released.' : props.state.creatures.length <= 1 ? props.t('releaseLastBlocked') : props.t('releaseCreature')}
             onClick={props.release}
           >
             {props.t('releaseCreature')}

@@ -1,4 +1,5 @@
-.map { display: grid; gap: 12px; min-width: 0; color: #f5fbff; }
+.map { display: grid; height:100%; grid-template-rows:auto auto minmax(140px,1fr) auto auto; gap:12px; min-width:0; color:#f5fbff; }
+.sceneViewport { min-height:0; min-width:0; container-type:size; display:grid; place-items:center; }
 .heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 3px 0; }
 .heading > div { min-width: 0; }
 .heading > div > span { font: 800 9px/1.2 ui-sans-serif, system-ui, sans-serif; letter-spacing: .16em; }
@@ -6,7 +7,7 @@
 .heading p { display: flex; align-items: center; gap: 6px; margin: 0; flex-shrink: 0; }
 .heading p b { font: italic 900 38px/.9 ui-sans-serif, system-ui, sans-serif; letter-spacing: -.08em; }
 .heading p span { color: #badff5; font: 700 9px/1.5 ui-sans-serif, system-ui, sans-serif; }
-.scene { position: relative; isolation: isolate; aspect-ratio: 600 / 620; overflow: hidden; border: 1px solid #9d97f5; border-radius: 0; background: #0a467c; box-shadow: 4px 5px 0 #080e2b66; }
+.scene { position: relative; isolation: isolate; aspect-ratio: 600 / 620; width:min(100cqw,calc(100cqh*600/620)); justify-self:center; overflow: hidden; border: 1px solid #9d97f5; border-radius: 0; background: #0a467c; box-shadow: 4px 5px 0 #080e2b66; }
 .scene::after { content: ''; position: absolute; z-index: 1; inset: 0; pointer-events: none; box-shadow: inset 0 0 65px #09245266; background: linear-gradient(180deg, #030f4355, transparent 22%, transparent 78%, #00194a99); }
 .city, .leaders { display: block; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .leaders { z-index: 2; color: #c7fbff; }
@@ -44,7 +45,7 @@
 :global([data-motion=reduce]) .map *, :global([data-motion=reduce]) .map *::after { animation: none !important; transition: none !important; }
 @media (max-width: 390px) { .heading h2 { font-size: 26px; } .portrait { width: 43px; height: 43px; } .marker strong { font-size: 11px; padding: 3px 4px; } .marker small { font-size: 8px; } .coordinate { font-size: 7px; left: 12px; } .caption { display: none; } }
 
-@media (max-height: 760px) { .map { gap: 8px; }.scene { width: min(100%,calc((100dvh - 346px)*600/620)); justify-self: center; }.heading h2 { font-size: 24px; }.legend { gap: 5px 9px; }.hint { font-size: 10px; } }
+@media (max-height: 760px) { .map { gap: 8px; }.heading h2 { font-size: 24px; }.legend { gap: 5px 9px; }.hint { font-size: 10px; } }
 
 .heading > div > span { color: #c8b9ff; }
 .heading h2 { color: #f1f1ff; }

@@ -162,7 +162,7 @@ export function parseCodekinContentView(value: unknown): CodekinContentView {
   for (const valueAsset of assets) {
     const asset = record(valueAsset)
     const key = text(asset.key, 128)
-    const path = text(asset.path, 240)
+    const path = text(asset.path, 320)
     if (assetKeys.has(key) || !SAFE_ASSET_PATH.test(path)
       || asset.mime !== 'image/png' && asset.mime !== 'image/webp'
       || asset.kind !== 'launcher' && asset.kind !== 'creature') {

@@ -37,7 +37,7 @@ describe('governance tooling', () => {
     expect(report.ok).toBe(true)
     expect(report.issues).toEqual([])
     expect(report.packs).toEqual([expect.objectContaining({
-      id: '@nath-vikky/codekin-core', creatures: 25, mechanics: 25, assets: 61,
+      id: '@nath-vikky/codekin-core', creatures: 31, mechanics: 31, assets: 67,
     })])
     expect(report.packs[0]!.assetBytes).toBeGreaterThan(0)
   })

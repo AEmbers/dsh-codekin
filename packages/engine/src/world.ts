@@ -120,7 +120,7 @@ function pickCreature(signal: TraceSignal, ecology: TraceEcology, random: Random
     if (variantCreatureId !== undefined) return variantCreatureId
   }
   const intensity = Math.min(5, Math.max(0, signal.intensity))
-  const candidates = content.creaturesInEcology(ecology)
+  const candidates = content.creaturesInEcology(ecology).filter(creature => creature.combatRole !== 'expedition-recruit')
   const weights = candidates.map((creature) => {
     switch (creature.rarity) {
       case 'common': return 38
@@ -188,6 +188,7 @@ export function applyTraceSignal(
   const settled = settleTraceWildIdleRewards(current, signal.at, random)
   if (settled.processedSignals.includes(signal.id)) return settled
   const next = structuredClone(settled)
+  discoverExpedition(next, signal)
   purgeExpiredEncounters(next, signal.at)
   next.processedSignals.push(signal.id)
   next.processedSignals = next.processedSignals.slice(-MAX_PROCESSED_SIGNALS)
@@ -230,3 +231,4 @@ export function applyTraceSignal(
   }
   return commit(next, signal.at)
 }
+import { discoverExpedition } from './expedition.ts'

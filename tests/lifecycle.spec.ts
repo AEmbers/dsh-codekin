@@ -101,12 +101,12 @@ describe('TraceWild Cordis lifecycle', () => {
     expect(snapshot).toHaveBeenCalledOnce()
   })
 
-  it('serves the client-safe content view over the loopback API', () => {
+  it('serves the client-safe content view over the loopback API', async () => {
     const group = createTraceWildRoutes({} as TraceWildService, '.', CORE_CONTENT_VIEW)
     const content = group.routes.find(route => route.path === `${TRACEWILD_API_PREFIX}/content`)!
     const res = response()
 
-    content.handler(request('GET', {
+    await content.handler(request('GET', {
       host: '127.0.0.1:63214',
       origin: 'http://127.0.0.1:63214',
       'sec-fetch-site': 'same-origin',
@@ -115,7 +115,7 @@ describe('TraceWild Cordis lifecycle', () => {
     expect(res.statuses).toEqual([200])
     const body = JSON.parse(res.writes.join('')) as Record<string, unknown>
     expect(body.id).toBe(CORE_CONTENT_VIEW.id)
-    expect(body.creatures).toHaveLength(25)
+    expect(body.creatures).toHaveLength(31)
     expect(body).not.toHaveProperty('mechanics')
   })
 

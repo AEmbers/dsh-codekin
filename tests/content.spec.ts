@@ -91,10 +91,10 @@ describe('Codekin content packs', () => {
     expect(registry.packs).toHaveLength(1)
     expect(registry.ecologies).toHaveLength(5)
     expect(registry.qualities).toHaveLength(5)
-    expect(registry.creatures).toHaveLength(25)
-    expect(registry.skills).toHaveLength(25)
-    expect(registry.mechanics).toHaveLength(25)
-    expect(registry.assets).toHaveLength(61)
+    expect(registry.creatures).toHaveLength(31)
+    expect(registry.skills).toHaveLength(31)
+    expect(registry.mechanics).toHaveLength(31)
+    expect(registry.assets).toHaveLength(67)
     expect(registry.creature('forge-rivetclaw')).toMatchObject({
       name: { zhCN: '铆钉蟹', en: 'Rivetclaw' },
       sprite: 'creature:forge-rivetclaw:sprite',
@@ -107,7 +107,7 @@ describe('Codekin content packs', () => {
     expect(registry.asset('creature:forge-rivetclaw:sprite')?.path).toBe(
       'sprites/forge-rivetclaw.webp',
     )
-    for (const creature of registry.creatures) {
+    for (const creature of registry.creatures.filter(creature => creature.combatRole !== 'expedition-recruit')) {
       expect(registry.asset(`creature:${creature.id}:evolved`)).toMatchObject({
         path: `evolved/${creature.id}.webp`, mime: 'image/webp', kind: 'creature',
       })
@@ -167,7 +167,7 @@ describe('Codekin content packs', () => {
       '@nath-vikky/codekin-core',
       '@example/codekin-addon',
     ])
-    expect(registry.creatures).toHaveLength(26)
+    expect(registry.creatures).toHaveLength(32)
 
     const { view } = composition
     expect(view.creatures.at(-1)?.id).toBe('addon-pulsebeetle')

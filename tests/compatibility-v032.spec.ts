@@ -91,6 +91,9 @@ describe('Codekin 0.3.2 compatibility transcripts', () => {
 
   it('pins world, reward, encounter, inventory, and log behavior', () => {
     const state = worldTranscript()
+    // Expedition bookkeeping is additive; legacy drops and random outcomes stay pinned.
+    expect(state.expedition).toMatchObject({ clues: 2, events: [] })
+    delete state.expedition
     expect(state).toMatchObject({ schemaVersion: 3, starterChosen: true, revision: 6 })
     expect(fingerprint(state)).toBe('bb3379be14765efc58497c6808c45f4d8f8da8bd07627fb0c1c57ef7c3086904')
     expect(fingerprint(restoreTraceWildState(state, state.updatedAt))).toBe(

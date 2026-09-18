@@ -4,6 +4,8 @@ import type {
   IndividualQuality,
   TraceEcology,
 } from '../../content-sdk/src/types.ts'
+import type { ExpeditionCombat, ExpeditionPerk, ExpeditionState, ExpeditionTarget, ExpeditionNodeChoice, ExpeditionSupport } from './expedition-types.ts'
+import type { ExpeditionBossId, ExpeditionShopItemId } from './expedition-catalog.ts'
 
 export type {
   CaptureCoreQuality,
@@ -217,7 +219,8 @@ export interface BattleState {
   id: string
   encounterId: string
   wildCreatureId: string
-  mode: 'wild' | 'tower'
+  mode: 'wild' | 'tower' | 'expedition'
+  expedition?: ExpeditionCombat
   towerFloor?: number
   bossSkillTier: 1 | 2 | 3 | 4 | 5
   board: MatchTile[]
@@ -363,6 +366,7 @@ export interface TraceWildState {
   rewardPity: TraceWildRewardPity
   idle: TraceWildIdleState
   tower: TraceWildTowerState
+  expedition?: ExpeditionState
   processedSignals: string[]
   log: TraceLogEntry[]
 }
@@ -377,10 +381,23 @@ export interface TraceSignal {
   intensity: number
   activeMinutes: number
   enhanced: boolean
+  /** Verified completed child session, never inferred from tool names. */
+  collaboration?: boolean
   variant?: 'missing' | 'timeout' | 'stack' | 'crash' | 'overflow'
 }
 
 export type TraceWildAction =
+  | { type: 'expedition-start'; eventId: string }
+  | { type: 'expedition-continue'; runId: string }
+  | { type: 'expedition-retry'; runId: string }
+  | { type: 'expedition-leave'; runId: string }
+  | { type: 'expedition-perk'; runId: string; perk: ExpeditionPerk }
+  | { type: 'expedition-route'; runId: string; route: 'repair' | 'beacon' | 'safe-bridge' | 'unstable-bridge' }
+  | { type: 'expedition-target'; runId: string; target: ExpeditionTarget }
+  | { type: 'expedition-node-choice'; runId: string; node: number; choice: ExpeditionNodeChoice; replace?: ExpeditionPerk }
+  | { type: 'expedition-support'; runId: string; support: ExpeditionSupport }
+  | { type: 'expedition-recruit'; bossId?: ExpeditionBossId }
+  | { type: 'expedition-shop-buy'; itemId: ExpeditionShopItemId; count: number; purchaseId: string }
   | { type: 'choose-starter'; creatureId: string }
   | { type: 'start-battle'; encounterId: string }
   | { type: 'start-tower' }

@@ -70,7 +70,7 @@ export class TraceWildService {
     if (!this.stateValue.enabled) return
     if (session.header.parentSession !== undefined || session.header.origin === 'subagent') {
       const root = this.rootSession(session)
-      if (root !== undefined) this.classifier.observeRelatedActivity(root, event)
+      if (root !== undefined) this.classifier.observeRelatedActivity(root, event, session)
       return
     }
     const signal = this.classifier.observe(session, event)

@@ -41,6 +41,8 @@ pnpm simulate -- --check --output simulation-report.json
 
 The default `codekin-simulation-v1` report runs seven combat scenarios over 24 fixed seeds. `--check` applies the repository's pacing and danger thresholds; `--seeds` and `--seed` select larger deterministic runs. The command never uses user-controlled randomness or live DSH state.
 
+`node tools/expedition-simulation.ts --check --output expedition-report.json` runs 576 seven-node expeditions: 24 fixed seeds across three build families, four solo/new/level-30/level-60 profiles, and two route policies. The novice policy uses the first legal swap, ready skills, one support per battle and interference-then-guard module targeting. The safe policy takes repair/stock/repair. The risk policy takes charge/elite, buys a forge perk when healthy and sabotages the finale when healthy. Safe-route gates require 80% tutorial and 60% ordinary completion; the optional risk route requires 40%. All scenarios must stay below 300 actions on average for four fights. It does not measure human play time or optimized tactics. This gate also runs in `pnpm check`.
+
 ## Performance and size budgets
 
 ```sh
@@ -50,9 +52,9 @@ pnpm performance -- --check --output performance-report.json
 
 The `codekin-performance-v1` report measures a typical authoritative battle action, a 750-Codekin restore, content-registry construction, the fixed simulation matrix, browser and total JavaScript bundles, core assets, and large-roster JSON size. Cross-platform release ceilings live in `performance-budget.json`; timing gates use p95 samples and intentionally leave headroom for shared CI hosts.
 
-The in-window settings feature adds approximately 4 KB gzip to the 89.37 KB graphic-UI client for bilingual controls, preference persistence and the settings dialog. Its compressed-client ceiling is 95,000 bytes; the 400,000-byte raw-client ceiling and all engine, image and save budgets remain unchanged. Settings add no dependencies or image downloads.
+The expedition development branch allows 430,000 raw client bytes and 120,000 gzip bytes. Unknown-route presentation, terminal reveal, permanent per-Boss recruitment and the XP shop add approximately 11 KB raw / 3 KB gzip to the seven-node UI (measured client: approximately 422 KB raw / 118 KB gzip). No new runtime dependency is added. Engine timing, total JavaScript and save budgets stay unchanged. Six approved transparent Boss portraits are loaded when revealed or unlocked; unknown discovery cards request no Boss portrait.
 
-The core image budget is 4 MB for the launcher, 25 original sprites, 25 transparent 768px evolution portraits, and five ultimate scene/silhouette pairs. Appearance images use WebP with preserved alpha. Ultimate scenes retain the character's themed environment while removing the outer paper background; separate alpha masks keep the charged battle glow on the character outline. Review galleries, source masters, and processing prompts remain outside the repository and package. Appearance changes do not add gameplay random draws or alter combat values.
+The core image budget is 6 MB for the launcher, 25 original sprites, 25 transparent 768px evolution portraits, five ultimate scene/silhouette pairs and six recruitable Boss portraits. Each Boss currently has one authored form. The five newly integrated WebP portraits add about 1.47 MB; their PNG source masters remain outside the package. Appearance images preserve alpha. Ultimate scenes retain the character's themed environment while removing the outer paper background; separate alpha masks keep the charged battle glow on the character outline. Review galleries and processing prompts remain outside the repository and package. Appearance changes do not add gameplay random draws or alter combat values.
 
 ## Installed DSH lifecycle
 

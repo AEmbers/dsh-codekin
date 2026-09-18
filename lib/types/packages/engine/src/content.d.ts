@@ -8,6 +8,7 @@ export interface CodekinEngineContent {
     readonly starterCreatureIds: readonly string[];
     readonly towerRotation: readonly string[];
     creature(id: string): CreatureDefinition | undefined;
+    hasEvolvedAppearance(creatureId: string): boolean;
     hasUltimateAppearance(creatureId: string): boolean;
     creaturesInEcology(ecology: TraceEcology): readonly CreatureDefinition[];
     skill(creatureId: string): CreatureSkillDefinition | undefined;

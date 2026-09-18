@@ -1,6 +1,9 @@
 import { CAPTURE_CORE_QUALITIES } from '../../content-sdk/src/types.ts'
 import { MATCH_BOARD_CELLS } from './match3.ts'
 import type { CaptureCoreQuality, TraceWildAction } from './types.ts'
+import { EXPEDITION_PERKS } from './expedition.ts'
+import type { ExpeditionNodeChoice } from './expedition-types.ts'
+import { EXPEDITION_SHOP_ITEMS, isExpeditionBoss } from './expedition-catalog.ts'
 
 function plainRecord(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)
@@ -31,6 +34,47 @@ function boardIndex(value: unknown): number {
 export function normalizeTraceWildAction(value: unknown): TraceWildAction {
   const row = plainRecord(value)
   switch (row.type) {
+    case 'expedition-start':
+      exactKeys(row, ['type', 'eventId'])
+      return { type: row.type, eventId: safeId(row.eventId, 'event_') }
+    case 'expedition-continue':
+    case 'expedition-retry':
+    case 'expedition-leave':
+      exactKeys(row, ['type', 'runId'])
+      return { type: row.type, runId: safeId(row.runId, 'run_') }
+    case 'expedition-perk':
+      exactKeys(row, ['type', 'runId', 'perk'])
+      if (!EXPEDITION_PERKS.some(perk => perk.id === row.perk)) throw new TypeError('invalid action')
+      return { type: row.type, runId: safeId(row.runId, 'run_'), perk: row.perk as typeof EXPEDITION_PERKS[number]['id'] }
+    case 'expedition-route':
+      exactKeys(row, ['type', 'runId', 'route'])
+      if (row.route !== 'repair' && row.route !== 'beacon' && row.route !== 'safe-bridge' && row.route !== 'unstable-bridge') throw new TypeError('invalid action')
+      return { type: row.type, runId: safeId(row.runId, 'run_'), route: row.route }
+    case 'expedition-target':
+      exactKeys(row, ['type', 'runId', 'target'])
+      if (row.target !== 'core' && row.target !== 'shield' && row.target !== 'interference') throw new TypeError('invalid action')
+      return { type: row.type, runId: safeId(row.runId, 'run_'), target: row.target }
+    case 'expedition-recruit':
+      exactKeys(row, row.bossId === undefined ? ['type'] : ['type', 'bossId'])
+      if (row.bossId !== undefined && !isExpeditionBoss(row.bossId)) throw new TypeError('invalid action')
+      return { type: row.type, ...(row.bossId === undefined ? {} : { bossId: row.bossId }) }
+    case 'expedition-shop-buy': {
+      exactKeys(row, ['type', 'itemId', 'count', 'purchaseId'])
+      const item = EXPEDITION_SHOP_ITEMS.find(item => item.id === row.itemId)
+      if (!item || !Number.isSafeInteger(row.count) || Number(row.count) < 1 || Number(row.count) > 99) throw new TypeError('invalid action')
+      const purchaseId = safeId(row.purchaseId, 'shop_')
+      if (!/^shop_[a-z0-9_-]{8,64}$/.test(purchaseId)) throw new TypeError('invalid action')
+      return { type: row.type, itemId: item.id, count: Number(row.count), purchaseId }
+    }
+    case 'expedition-support':
+      exactKeys(row, ['type', 'runId', 'support'])
+      if (row.support !== 'shuffle' && row.support !== 'cleanse' && row.support !== 'burst') throw new TypeError('invalid action')
+      return { type: row.type, runId: safeId(row.runId, 'run_'), support: row.support }
+    case 'expedition-node-choice':
+      exactKeys(row, row.replace === undefined ? ['type', 'runId', 'node', 'choice'] : ['type', 'runId', 'node', 'choice', 'replace'])
+      if (![1, 3, 5].includes(row.node as number) || !['cache-repair', 'cache-charge', 'cache-salvage', 'workshop-install', 'workshop-reforge', 'workshop-stock', 'camp-repair', 'camp-beacon', 'camp-sabotage'].includes(String(row.choice))) throw new TypeError('invalid action')
+      if (row.replace !== undefined && (row.choice !== 'workshop-reforge' || !EXPEDITION_PERKS.some(perk => perk.id === row.replace))) throw new TypeError('invalid action')
+      return { type: row.type, runId: safeId(row.runId, 'run_'), node: row.node as number, choice: row.choice as ExpeditionNodeChoice, ...(row.replace === undefined ? {} : { replace: row.replace as typeof EXPEDITION_PERKS[number]['id'] }) }
     case 'choose-starter':
       exactKeys(row, ['type', 'creatureId'])
       return { type: 'choose-starter', creatureId: safeId(row.creatureId) }

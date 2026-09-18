@@ -2,7 +2,9 @@ import { memo, useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import { MAX_MAP_ENCOUNTERS } from '../../../engine/src/balance.ts'
-import type { TraceEcology, TraceWildSnapshot } from '../../../engine/src/types.ts'
+import type { TraceEcology, TraceWildSnapshot, TraceWildAction } from '../../../engine/src/types.ts'
+import { ExpeditionPanel } from './ExpeditionPanel.tsx'
+import { expeditionActive } from '../../../engine/src/expedition.ts'
 import { creatureById } from '../content.ts'
 import { CORE_KEYS, CreatureSprite, ECOLOGY_KEYS, creatureName } from './creature-presentation.tsx'
 import css, { styleText } from './codekin-map.module.css'
@@ -146,7 +148,9 @@ export function CodekinMapView(props: {
   t: Translate
   zh: boolean
   busy: boolean
+  reducedMotion: boolean
   start: (encounterId: string) => void
+  act: (action: TraceWildAction) => void
 }) {
   const [clock, setClock] = useState(props.serverTime)
   useEffect(() => {
@@ -167,7 +171,8 @@ export function CodekinMapView(props: {
       <div><span>CODEKIN / SIGNAL CITY</span><h2 id="codekin-map-title">{props.t('map')}</h2></div>
       <p><b>{String(props.state.encounters.length).padStart(2, '0')}</b><span>/ {MAX_MAP_ENCOUNTERS}<br />{props.zh ? '驻留信号' : 'SIGNALS'}</span></p>
     </header>
-    <div className={css.scene}>
+    <ExpeditionPanel state={props.state} zh={props.zh} busy={props.busy} reducedMotion={props.reducedMotion} act={props.act} />
+    <div className={css.sceneViewport}><div className={css.scene}>
       <City />
       <div className={css.coordinate} aria-hidden="true">SECTOR 01 <i /> LIVE SIGNAL</div>
       <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className={css.leaders} aria-hidden="true" focusable="false">
@@ -185,7 +190,7 @@ export function CodekinMapView(props: {
         const special = encounter.enhanced || creature.rarity === 'rare' || creature.rarity === 'apex' || encounter.quality === 'nova' || encounter.quality === 'origin'
         return <button key={encounter.id} type="button" className={css.marker}
           style={{ left: `${berth[0] / WIDTH * 100}%`, top: `${berth[1] / HEIGHT * 100}%`, '--signal': ecologyColors[creature.ecology], '--delay': `${index * -0.6}s` } as CSSProperties}
-          data-special={special || undefined} data-quality={encounter.quality} disabled={props.busy || !props.state.starterChosen}
+          data-special={special || undefined} data-quality={encounter.quality} disabled={props.busy || !props.state.starterChosen || expeditionActive(props.state)}
           aria-label={`${name} · Lv.${encounter.level} · ${props.t(CORE_KEYS[encounter.quality])} · ${remaining}${encounter.enhanced ? ` · ${props.t('enhanced')}` : ''}`}
           title={`${name} · ${props.t(ECOLOGY_KEYS[creature.ecology])} · ${props.t(CORE_KEYS[encounter.quality])} · ${remaining}`}
           onClick={() => props.start(encounter.id)}>
@@ -194,7 +199,7 @@ export function CodekinMapView(props: {
         </button>
       })}
       {props.state.encounters.length === 0 && <div className={css.empty}><span aria-hidden="true">◎</span><p>{props.t('mapEmpty')}</p></div>}
-    </div>
+    </div></div>
     <div className={css.legend}>{(Object.keys(ECOLOGY_KEYS) as TraceEcology[]).map(ecology => <span key={ecology} style={{ '--signal': ecologyColors[ecology] } as CSSProperties}><i />{props.t(ECOLOGY_KEYS[ecology])}</span>)}</div>
     <p className={css.hint}>{props.zh ? '选择头像，前往信号所在的街区。' : 'Select a portrait to meet its signal.'}</p>
   </section>

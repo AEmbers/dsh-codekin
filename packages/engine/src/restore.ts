@@ -199,14 +199,17 @@ function syncLegacyPartyHealth(battle: BattleState): void {
 function restoreBattle(root: Record<string, unknown>, state: TraceWildState): BattleState | undefined {
   const raw = record(root.battle)
   if (raw === undefined) return undefined
-  const mode = raw.mode === 'tower' ? 'tower' : 'wild'
+  const mode = raw.mode === 'expedition' ? 'expedition' : raw.mode === 'tower' ? 'tower' : 'wild'
   const encounterId = typeof raw.encounterId === 'string' ? raw.encounterId : ''
   const encounter = mode === 'wild' ? state.encounters.find(row => row.id === encounterId) : undefined
   const towerFloor = mode === 'tower' ? safeInt(raw.towerFloor, 0, MAX_TOWER_FLOOR) : 0
   if (mode === 'tower' && (towerFloor < 1 || towerFloor !== state.tower.highestClearedFloor + 1
     || encounterId !== `tower_${towerFloor}`)) return undefined
   const towerProfile = mode === 'tower' ? towerFloorProfile(towerFloor) : undefined
-  const wild = creatureById(encounter?.creatureId ?? towerProfile?.creatureId ?? '')
+  const run = mode === 'expedition' ? state.expedition?.run : undefined
+  if (mode === 'expedition' && (!run || run.id !== encounterId || run.stage % 2 !== 0 || !['battle', 'failed'].includes(run.phase))) return undefined
+  const expedition = run === undefined ? undefined : expeditionProfile(run)
+  const wild = creatureById(encounter?.creatureId ?? towerProfile?.creatureId ?? expedition?.creatureId ?? '')
   const board = restoreBoard(raw.board)
   if ((mode === 'wild' && encounter === undefined) || wild === undefined || board === undefined) return undefined
   const rawParty = Array.isArray(raw.party) ? raw.party : []
@@ -241,6 +244,7 @@ function restoreBattle(root: Record<string, unknown>, state: TraceWildState): Ba
     })
   }
   const activeIndex = safeInt(raw.activeIndex, 0, party.length - 1)
+  if (run && (party.length !== run.party.length || party.some((member, index) => member.instanceId !== run.party[index]?.instanceId))) return undefined
   const partyMaxHp = party.reduce((sum, member) => sum + member.maxHp, 0)
   const legacyPartyHp = party.reduce((sum, member) => sum + member.hp, 0)
   const partyHp = Math.min(partyMaxHp, safeInt(raw.partyHp, legacyPartyHp, partyMaxHp))
@@ -253,12 +257,12 @@ function restoreBattle(root: Record<string, unknown>, state: TraceWildState): Ba
     && rawEnemyIntent !== 'lock' && rawEnemyIntent !== 'freeze') return undefined
   const enemyIntent: EnemyIntent = rawEnemyIntent
   const partyAverageLevel = party.reduce((sum, member) => sum + member.level, 0) / party.length
-  const battleLevel = encounter?.level ?? towerProfile!.level
-  const battleQuality = encounter?.quality ?? towerProfile!.quality
-  const fallbackWildStats = towerProfile === undefined
+  const battleLevel = encounter?.level ?? expedition?.level ?? towerProfile!.level
+  const battleQuality = encounter?.quality ?? expedition?.quality ?? towerProfile!.quality
+  const fallbackWildStats = expedition?.stats ?? (towerProfile === undefined
     ? wildStats(wild, battleLevel, battleQuality, party.length, partyAverageLevel)
-    : towerBossStats(wild, towerProfile, party.length, partyAverageLevel)
-  const wildMaxHp = towerProfile === undefined
+    : towerBossStats(wild, towerProfile, party.length, partyAverageLevel))
+  const wildMaxHp = towerProfile === undefined && expedition === undefined
     ? Math.max(1, safeInt(raw.wildMaxHp, fallbackWildStats.hp, 9_999_999))
     : fallbackWildStats.hp
   const defaultTarget = enemyTargetFor({ activeIndex }, enemyIntent)
@@ -285,7 +289,7 @@ function restoreBattle(root: Record<string, unknown>, state: TraceWildState): Ba
     wildCreatureId: wild.id,
     mode,
     ...(towerProfile === undefined ? {} : { towerFloor: towerProfile.floor }),
-    bossSkillTier: towerProfile?.skillTier
+    bossSkillTier: (expedition === undefined ? towerProfile?.skillTier : 1)
       ?? bossSkillTierForThreat(threatPoints(battleLevel, battleQuality)),
     board,
     party,
@@ -324,7 +328,7 @@ function restoreBattle(root: Record<string, unknown>, state: TraceWildState): Ba
     round: Math.max(1, safeInt(raw.round, 1, 999999)),
     wildHp: Math.max(1, safeInt(raw.wildHp, wildMaxHp, wildMaxHp)),
     wildMaxHp,
-    wildArmor: safeInt(raw.wildArmor, encounter?.armor ?? towerProfile!.armor, 12),
+    wildArmor: safeInt(raw.wildArmor, encounter?.armor ?? towerProfile?.armor ?? (run?.stage === 0 ? 1 : 0), 12),
     wildShield: safeInt(raw.wildShield, 0, wildMaxHp),
     pendingWildHealing: turnOwner === 'boss'
       ? safeInt(raw.pendingWildHealing, 0, wildMaxHp)
@@ -383,6 +387,7 @@ function restoreBattle(root: Record<string, unknown>, state: TraceWildState): Ba
     Math.max(0, Math.round(restored.wildMaxHp * 0.4) - restored.wildShield),
   )
   syncLegacyPartyHealth(restored)
+  if (run) restored.expedition = restoreExpeditionCombat(raw.expedition, run, restored)
   return restored
 }
 
@@ -417,12 +422,13 @@ export function restoreTraceWildState(value: unknown, now = Date.now()): TraceWi
       ? Math.max(levelFloorXp, safeInt(row.xp, levelFloorXp, totalXpForLevel(MAX_PLAYER_LEVEL, quality)))
       : levelFloorXp
     const level = levelForXp(savedXp, quality)
+    const evolvedUnlocked = level >= CREATURE_EVOLUTION_LEVEL && currentEngineContent().hasEvolvedAppearance(creatureId)
     const ultimateUnlocked = level >= CREATURE_ULTIMATE_LEVEL && currentEngineContent().hasUltimateAppearance(creatureId)
     const appearance = ultimateUnlocked && (row.ultimateAppearanceUnlocked !== true || savedLevel < CREATURE_ULTIMATE_LEVEL)
       ? 'ultimate'
-      : savedLevel < CREATURE_EVOLUTION_LEVEL && level >= CREATURE_EVOLUTION_LEVEL
+      : savedLevel < CREATURE_EVOLUTION_LEVEL && evolvedUnlocked
         ? 'evolved'
-        : row.appearance === 'original' || (row.appearance === 'evolved' && level >= CREATURE_EVOLUTION_LEVEL)
+        : row.appearance === 'original' || (row.appearance === 'evolved' && evolvedUnlocked)
           || (row.appearance === 'ultimate' && ultimateUnlocked)
           ? row.appearance
           : undefined
@@ -552,9 +558,21 @@ export function restoreTraceWildState(value: unknown, now = Date.now()): TraceWi
       .slice(-MAX_PROCESSED_SIGNALS)
     : []
   next.log = []
+  if (root.expedition !== undefined) next.expedition = restoreExpedition(root.expedition, next)
   if (root.schemaVersion === 3) {
     const restoredBattle = restoreBattle(root, next)
     if (restoredBattle !== undefined) next.battle = restoredBattle
+  }
+  const run = next.expedition?.run
+  if (run !== undefined) {
+    const rawRun = record(record(root.expedition)?.run)
+    const checkpoint = restoreBattle({ battle: rawRun?.checkpoint }, next)
+    if (checkpoint !== undefined && checkpoint.mode === 'expedition' && run.checkpointRng !== undefined && run.checkpointSupplies !== undefined) run.checkpoint = checkpoint
+    if ((run.phase === 'battle' && (next.battle?.mode !== 'expedition' || !run.checkpoint)) || (run.phase === 'failed' && run.checkpoint === undefined)
+      || (run.phase === 'upgrade' && run.offers.length !== 3)) {
+      if (run.checkpoint) run.phase = 'failed'
+      else { delete next.expedition!.run; next.expedition!.recoveryNotice = true; if (next.battle?.mode === 'expedition') delete next.battle }
+    }
   }
   // A persisted active battle may temporarily keep its elapsed encounter long
   // enough for strict battle validation. Invalid battles must not leave that
@@ -562,3 +580,4 @@ export function restoreTraceWildState(value: unknown, now = Date.now()): TraceWi
   purgeExpiredEncounters(next, now)
   return next
 }
+import { expeditionProfile, restoreExpedition, restoreExpeditionCombat } from './expedition.ts'

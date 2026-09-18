@@ -48,7 +48,7 @@ describe('React content view', () => {
 
   it('accepts the complete core view while keeping server-only fields out of JSON', () => {
     const parsed = parseCodekinContentView(CORE_CONTENT_VIEW)
-    expect(parsed.creatures).toHaveLength(25)
+    expect(parsed.creatures).toHaveLength(31)
     const json = JSON.stringify(parsed)
     expect(json).not.toContain('mechanics')
     expect(json).not.toContain('aliases')

@@ -33,7 +33,7 @@
     }
   ],
   "expect": {
-    "finalStateSha256": "5b0502970e188e770045d823da144975336f6aadb3740f5b724b84e6e06cf415",
+    "finalStateSha256": "4cef95c1742f9e619de21c9a8ae5228f9ac247c44dbf790e0d4e169718861f79",
     "revision": 2
   }
 }

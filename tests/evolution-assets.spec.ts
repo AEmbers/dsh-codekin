@@ -50,7 +50,7 @@ describe('production evolution asset delivery', () => {
     const route = group.routes.find(row => row.path === `${TRACEWILD_API_PREFIX}/assets`)!
     const assets = CORE_CONTENT_VIEW.assets.filter(row => row.key.endsWith(':ultimate'))
     expect(assets).toHaveLength(5)
-    expect(assets.map(asset => asset.key)).toEqual(CORE_CONTENT_VIEW.creatures.filter(creature => creature.rarity === 'apex').map(creature => `creature:${creature.id}:ultimate`))
+    expect(assets.map(asset => asset.key)).toEqual(CORE_CONTENT_VIEW.creatures.filter(creature => creature.rarity === 'apex' && creature.combatRole !== 'expedition-recruit').map(creature => `creature:${creature.id}:ultimate`))
     try {
       for (const asset of assets) {
         const res = response()
@@ -83,9 +83,9 @@ describe('production evolution asset delivery', () => {
     const group = createTraceWildRoutes({} as TraceWildService, assetDirectory, CORE_CONTENT_VIEW)
     const route = group.routes.find(row => row.path === `${TRACEWILD_API_PREFIX}/assets`)!
     try {
-      expect(CORE_CONTENT_VIEW.creatures).toHaveLength(25)
+      expect(CORE_CONTENT_VIEW.creatures).toHaveLength(31)
       expect(CORE_CONTENT_VIEW.assets.filter(row => row.key.endsWith(':evolved'))).toHaveLength(25)
-      for (const creature of CORE_CONTENT_VIEW.creatures) {
+      for (const creature of CORE_CONTENT_VIEW.creatures.filter(creature => creature.combatRole !== 'expedition-recruit')) {
         const asset = CORE_CONTENT_VIEW.assets.find(row => row.key === `creature:${creature.id}:evolved`)
         expect(asset, creature.id).toMatchObject({ path: `evolved/${creature.id}.webp`, mime: 'image/webp', kind: 'creature' })
         const res = response()
@@ -136,6 +136,6 @@ describe('production evolution asset delivery', () => {
     expect(metadata.files).toContain('assets/creatures/evolved')
     expect(metadata.files.filter(path => /codekin-internal-docs|(?:^|\/)prompts(?:\/|$)|\.workspace|gallery\.html/i.test(path))).toEqual([])
     const filenames = await readdir(join(assetDirectory, 'evolved'))
-    expect(filenames.sort()).toEqual(CORE_CONTENT_VIEW.creatures.map(creature => `${creature.id}.webp`).sort())
+    expect(filenames.sort()).toEqual(CORE_CONTENT_VIEW.creatures.filter(creature => creature.combatRole !== 'expedition-recruit').map(creature => `${creature.id}.webp`).sort())
   })
 })
