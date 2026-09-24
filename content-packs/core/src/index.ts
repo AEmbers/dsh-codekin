@@ -42,8 +42,8 @@ const QUALITY_NAMES = {
 export const CORE_CONTENT_PACK = defineContentPack({
   manifest: {
     id: '@nath-vikky/codekin-core',
-    version: '0.3.9-rc.1',
-    engine: '>=0.3.9-rc.1 <0.4.0',
+    version: '0.4.0-rc.1',
+    engine: '>=0.4.0-rc.1 <0.5.0-0',
     contentApi: 1,
   },
   ecologies: TRACE_ECOLOGIES.map((id, order) => ({

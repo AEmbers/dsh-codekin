@@ -5,8 +5,8 @@
   "restoreLargeRosterP95Ms": 15,
   "contentRegistryP95Ms": 10,
   "simulationMatrixMs": 8000,
-  "clientBundleBytes": 430000,
-  "clientBundleGzipBytes": 120000,
+  "clientBundleBytes": 445000,
+  "clientBundleGzipBytes": 126000,
   "shippedJavaScriptBytes": 800000,
   "coreAssetBytes": 6000000,
   "largeRosterJsonBytes": 500000

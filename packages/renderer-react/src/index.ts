@@ -6,6 +6,9 @@ import type { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type { SettingsSectionOwnerProps } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import { TraceWildOverlay } from './components/TraceWildOverlay.tsx'
+import type { TraceWildOverlayProps } from './components/TraceWildOverlay.tsx'
+import { CodekinStartupBoundary } from './components/CodekinStartupBoundary.tsx'
+import { createElement } from 'react'
 import { TraceWildSettings } from './components/TraceWildSettings.tsx'
 import { styleId, styleText } from './components/tracewild.module.css'
 import { styleText as appearanceStyleText } from './components/creature-appearance.module.css'
@@ -30,6 +33,10 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 
 export const inject = ['slots', 'locale']
 
+function SafeCodekinOverlay(props: TraceWildOverlayProps) {
+  return createElement(CodekinStartupBoundary, { zh: props.t('title') === '码灵', children: createElement(TraceWildOverlay, props) })
+}
+
 function installStyles(): () => void {
   if (typeof document === 'undefined') return () => undefined
   const existing = [...document.querySelectorAll<HTMLStyleElement>('style[data-plugin-css]')]
@@ -52,7 +59,7 @@ export function apply(ctx: ClientContext): void {
     id: 'dsh-codekin',
     order: 80,
     locale: NS,
-  }, TraceWildOverlay))
+  }, SafeCodekinOverlay))
   ctx.slots.inject('settings.section', () => ctx.slots.register({
     name: 'settings.section',
     id: 'dsh-codekin',

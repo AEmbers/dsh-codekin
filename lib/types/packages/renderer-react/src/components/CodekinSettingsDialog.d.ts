@@ -1,9 +1,11 @@
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots';
 import type { UiPreferences } from '../motion.ts';
+import type { CodekinUpdates } from './use-codekin-updates.ts';
 export declare function CodekinSettingsDialog(props: {
     t: PropsLocale<'tracewild'>['t'];
     preferences: UiPreferences;
     saved: boolean;
+    updates: CodekinUpdates;
     update: (value: UiPreferences) => void;
     close: () => void;
     resetWindow: () => void;

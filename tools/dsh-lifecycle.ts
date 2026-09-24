@@ -13,7 +13,7 @@ import { chromium } from 'playwright-core'
 import type { Page } from 'playwright-core'
 
 export const DSH_LIFECYCLE_FORMAT = 'codekin-dsh-lifecycle-v1' as const
-const DEFAULT_DSH_VERSION = '0.1.5-rc.1'
+const DEFAULT_DSH_VERSION = '0.1.7-rc.1'
 const DSH_WEB_PACKAGE = '@linxin666/dsh-web-all'
 const PACKAGE_NAME = '@nath-vikky/dsh-codekin'
 const API_PREFIX = '/api/tracewild'
@@ -642,6 +642,14 @@ export async function runDshLifecycle(options: {
     active = server.child
     const initial = await jsonRequest(server.port, `${API_PREFIX}/state`)
     const initialState = stateFrom(initial)
+    const updates = await http(server.port, `${API_PREFIX}/updates`)
+    if (updates.status === 200) {
+      const info = JSON.parse(updates.body) as { dshVersion?: string; compatible?: boolean }
+      assert.equal(info.dshVersion, dshVersion, 'update detection must report the running Host, not the SDK')
+      assert.equal(info.compatible, true, 'the tested installation must be compatible')
+    } else if (options.source === undefined) {
+      throw new Error(`Update guidance route unavailable: ${updates.status}`)
+    }
     if (initialState.starterChosen !== true) {
       await jsonRequest(server.port, `${API_PREFIX}/action`, 'POST', {
         type: 'choose-starter', creatureId: 'lumen-indeximp',
@@ -728,7 +736,7 @@ export async function dshLifecycleCli(argv: readonly string[]): Promise<number> 
     else if (argument === '--skip-browser') browser = false
     else if (argument === '--json') json = true
     else if (argument === '--help' || argument === '-h') {
-      console.log('Usage: node tools/dsh-lifecycle.ts [--dsh-version 0.1.5-rc.1] [--with-dsh-web 0.3.23] [--source package-spec] [--skip-browser] [--keep] [--json] [--output report.json]')
+      console.log('Usage: node tools/dsh-lifecycle.ts [--dsh-version 0.1.7-rc.1] [--with-dsh-web 0.4.1] [--source package-spec] [--skip-browser] [--keep] [--json] [--output report.json]')
       return 0
     } else throw new TypeError(`unknown option ${argument}`)
   }

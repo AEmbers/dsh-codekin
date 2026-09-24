@@ -60,6 +60,7 @@ export declare const zh: {
     readonly preferencesSections: "设置分类";
     readonly preferencesInterface: "界面";
     readonly preferencesEffects: "体验";
+    readonly preferencesUpdates: "更新";
     readonly preferencesHelp: "帮助";
     readonly preferencesLanguage: "显示语言";
     readonly preferencesLanguageHint: "仅改变码灵，不影响 DSH。";

@@ -188,10 +188,10 @@ describe('Codekin content packs', () => {
   it('rejects incompatible engines, dependency versions, conflicts, and cycles', () => {
     expect(() => createContentRegistry(
       [CORE_CONTENT_PACK],
-      { engineVersion: '0.4.0' },
+      { engineVersion: '0.5.0' },
     )).toThrowError(expect.objectContaining({
       issues: expect.arrayContaining([
-        expect.objectContaining({ message: expect.stringContaining('engine 0.4.0') }),
+        expect.objectContaining({ message: expect.stringContaining('engine 0.5.0') }),
       ]),
     }))
 

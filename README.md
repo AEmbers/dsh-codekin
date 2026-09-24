@@ -6,7 +6,9 @@ Codekin is a creature-collection and match-three battle plugin for DeepSeek Harn
 
 ## In-game preview
 
-Development branch `feat/event-expeditions` adds **Unknown Expeditions**: collect six clues from completed DSH activity to open a seven-node route with four battles, supply choices, a recompile forge and a final camp. Build with 15 perks, choose an optional elite route, and use limited Shuffle, Cleanse or Burst supports. One of six glitch-style Bosses is revealed only at the seventh node, with distinct interference modules. Free retries preserve that encounter and restore battle-entry state and supplies. Defeating her permanently adds that specific Boss to the recruitment shop for 120 shards. The shop also sells Pulse / Prism / Nova XP chips for 4 / 9 / 22 shards (+100 / 250 / 650 XP), usable through the existing creature upgrade screen. All six have playable skills; Fork Queen also has authored lounge lines and three bond stories. This work is not included in the published `0.3.9-rc.1` release below.
+Codekin **`0.4.0-rc.1`** supports DSH `0.1.7-rc.1` with dsh-web `0.4.1`, as well as DSH `0.1.5-rc.3` with dsh-web `0.3.24`. Compatible-version update notices appear beside Settings, with startup/download guidance and no automatic installation. See [version matching and its startup limits](docs/updates.md).
+
+**Unknown Expeditions**: collect six clues from completed DSH activity to open a seven-node route with four battles, supply choices, a recompile forge and a final camp. Build with 15 perks, choose an optional elite route, and use limited Shuffle, Cleanse or Burst supports. One of six glitch-style Bosses is revealed only at the seventh node, with distinct interference modules. Free retries preserve that encounter and restore battle-entry state and supplies. Defeating her permanently adds that specific Boss to the recruitment shop for 120 shards. The shop also sells Pulse / Prism / Nova XP chips for 4 / 9 / 22 shards (+100 / 250 / 650 XP), usable through the existing creature upgrade screen. All six have playable skills; Fork Queen also has authored lounge lines and three bond stories.
 
 Actual Codekin `0.3.9-rc.1` screens captured in an isolated demonstration profile on DSH `0.1.5-rc.1`, with `dsh-web 0.3.23` installed. The demonstration roster includes unlocked appearances; new saves start with the normal starter and progression.
 
@@ -38,33 +40,35 @@ Actual Codekin `0.3.9-rc.1` screens captured in an isolated demonstration profil
 
 ## Install and enable
 
-### Current release: Codekin `0.3.9-rc.1`
+### Current release: Codekin `0.4.0-rc.1`
 
-The current verified pairing is **DSH `0.1.5-rc.1` + dsh-web `0.3.23`**. As of September 16, 2026, the latest [dsh-web `0.3.23`](https://github.com/zhu1090093659/dsh-web/releases/tag/v0.3.23) still pins its [bundled desktop host](https://github.com/zhu1090093659/dsh-web/blob/v0.3.23/desktop/runtime/host/package.json) to DSH `0.1.5-rc.1`. Codekin keeps this host minimum and SDK baseline, with installation, browser interaction and save-preservation checks against that pairing.
+The primary verified pairing is **DSH `0.1.7-rc.1` + dsh-web `0.4.1`**, matching [dsh-web's desktop host](https://github.com/zhu1090093659/dsh-web/blob/v0.4.1/desktop/runtime/host/package.json). The older **DSH `0.1.5-rc.3` + dsh-web `0.3.24`** pairing also remains supported. DSH's npm `latest` and `next` channels differ; choose the Host version explicitly.
 
-`0.3.9-rc.1` adds the companion lounge, bond stories, independent bilingual settings, a graphic UI theme and portrait-loading improvements. Existing saves remain in the same `DSH_HOME/codekinsave` directory; optional lounge progress extends schema 3 without resetting the roster, resources or appearance choices.
+`0.4.0-rc.1` adds mystery expeditions, Boss recruitment and compatible-update guidance to the existing lounge, bond stories and bilingual settings. Existing saves remain in the same `DSH_HOME/codekinsave` directory. Optional schema-3 expedition progress preserves the roster, resources, appearances and lounge progress.
 
 Install from npm with explicit versions:
 
 ```sh
-pnpm dlx @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add @nath-vikky/dsh-codekin@0.3.9-rc.1
+pnpm dlx @deepseek-ai/dsh@0.1.7-rc.1 plugin --profile web add @nath-vikky/dsh-codekin@0.4.0-rc.1
 ```
 
 The same release is also available as a GitHub Release tarball:
 
 ```sh
-pnpm dlx @deepseek-ai/dsh@0.1.5-rc.1 plugin --profile web add --ignore-scripts https://github.com/Nath-Vikky/dsh-codekin/releases/download/v0.3.9-rc.1/nath-vikky-dsh-codekin-0.3.9-rc.1.tgz
+pnpm dlx @deepseek-ai/dsh@0.1.7-rc.1 plugin --profile web add --ignore-scripts https://github.com/Nath-Vikky/dsh-codekin/releases/download/v0.4.0-rc.1/nath-vikky-dsh-codekin-0.4.0-rc.1.tgz
 ```
 
 Use the same `DSH_HOME` as your existing DSH installation so the command updates the intended profile. Restart DSH Web, then enable **DSH Settings → Codekin**. The draggable launcher opens the portrait game window and becomes a gift reminder when idle supplies are ready.
 
-The npm `latest` tag points to **`0.3.9-rc.1`**. npm and GitHub Release use the same package archive. Release tags and active development branches include reviewed runtime bundles for source installs.
+The npm `latest` tag points to **`0.4.0-rc.1`**. npm and GitHub Release use the same package archive. Release tags and the main branch include reviewed runtime bundles for source installs. On the older supported DSH line, replace only the Host version in the command with `0.1.5-rc.3` and keep dsh-web at `0.3.24`.
 
 ### Version pairings
 
 | Codekin | DSH host | Distribution / status |
 | --- | --- | --- |
-| **`0.3.9-rc.1`** | **`0.1.5-rc.1`** | npm `latest` and current GitHub release; tested with dsh-web `0.3.23` |
+| **`0.4.0-rc.1`** | **`0.1.7-rc.1`** | npm `latest`; dsh-web `0.4.1` |
+| **`0.4.0-rc.1`** | **`0.1.5-rc.3`** | Older Host line; dsh-web `0.3.24` |
+| `0.3.9-rc.1` | `0.1.5-rc.1` | Previous release; tested with dsh-web `0.3.23` |
 | `0.3.8-rc.1` | `0.1.5-rc.1` | Previous npm / GitHub release; tested with dsh-web `0.3.20` and `0.3.22` |
 | `0.3.7-rc.1` | `0.1.2-rc.1` | Previous npm / GitHub release; tested with dsh-web `0.3.17` |
 | `0.3.6-rc.1` | `0.1.2-rc.1` | Previous GitHub compatibility release |
@@ -72,7 +76,14 @@ The npm `latest` tag points to **`0.3.9-rc.1`**. npm and GitHub Release use the 
 | `0.3.5-alpha.2` | `0.1.2-alpha.2` | Previous npm release; older content |
 | `0.2.0` | `0.1.0-rc.5` | Legacy package; source on `stable/0.2.x` |
 
-These are explicit version pairings; unlisted Alpha, RC, and stable versions need separate validation. This release's installed checks cover standalone DSH `0.1.5-rc.1` and its pairing with dsh-web `0.3.23`, including browser interactions and save preservation across restart, removal and reinstall.
+These are explicit version pairings; unlisted Alpha, RC, and stable versions need separate validation. Installed checks cover both maintained Host/web pairs, actual Host-version detection and save preservation across restart, removal and reinstall. Update and startup-help dialogs are verified inside the Codekin window.
+
+## What's new in `0.4.0-rc.1`
+
+- Seven-node mystery expeditions, branching choices, 15 perks, limited combat supports and optional elite encounters.
+- Six original glitch-style Boss portraits. Identities remain hidden until the final node; cleared Bosses unlock permanently in the recruitment shop alongside XP items.
+- DSH `0.1.7-rc.1` / dsh-web `0.4.1` compatibility, with the previous supported Host line retained.
+- Automatic compatible-version checks and bilingual manual download guidance. Legacy packages with overbroad compatibility declarations are excluded from newer Hosts; no automatic installation or save reset.
 
 ## What's new in `0.3.9-rc.1`
 
@@ -144,7 +155,7 @@ pnpm check
 pnpm lifecycle:dsh
 ```
 
-`pnpm check` runs type checks, unit tests, content/asset validation, a fixed replay, a seven-scenario combat simulation, production builds, and performance budgets. CI covers Windows, macOS, and Ubuntu with Node.js 22 and 24. Installed lifecycle checks exercise authenticated browser interaction, keyboard focus, restart, uninstall/reinstall, and save preservation on DSH `0.1.5-rc.1`, both standalone and with dsh-web `0.3.23`.
+`pnpm check` runs type checks, unit tests, content/asset validation, a fixed replay, combat and expedition simulations, production builds, and performance budgets. CI covers Windows, macOS, and Ubuntu with Node.js 22 and 24. The lifecycle matrix covers DSH `0.1.5-rc.3` + dsh-web `0.3.24` and DSH `0.1.7-rc.1` + dsh-web `0.4.1`, exercising authenticated browser interaction, keyboard focus, actual Host version detection, restart, uninstall/reinstall and save preservation.
 
 Final game artwork and public gameplay screenshots are included in the repository. Internal evolution comparison galleries, references, source masters, prompts, and test saves remain outside the repository and release package.
 

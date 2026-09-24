@@ -1,0 +1,17 @@
+.content { display: flex; flex-direction: column; gap: 12px; color: #f3f5ff; font-size: 13px; line-height: 1.5; }
+.content p { margin: 0; }
+.versions { display: grid; gap: 7px; margin: 0; padding: 12px; border: 1px solid #6287c9; background: #111b46; }
+.versions div { display: flex; justify-content: space-between; gap: 14px; }
+.versions dt { color: #afc8ec; }.versions dd { margin: 0; color: #fff; font-weight: 800; overflow-wrap: anywhere; }
+.status { padding: 12px; border-left: 3px solid #cbff25; background: #141d50; color: #f2f6ff; }
+.status b { color: #cbff25; }.compatible { color: #9beee7; }.problem { color: #ffb4cf; }
+.install { display: grid; gap: 6px; }.install code { user-select: text; overflow-wrap: anywhere; padding: 8px; background: #080f2d; color: #bcefff; font-size: 12px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.actions a, .actions button { padding: 9px 12px; min-height: 38px; border: 1px solid #87acf5; background: #152d69; color: #f4f8ff; font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; }
+.content .actions a,.content .actions a:visited { color: #f4f8ff; }
+.content .actions a:first-of-type,.content .actions a:first-of-type:visited { color: #0b183c; background: #caff27; border-color: #caff27; }
+.actions button:disabled { opacity: .65; cursor: wait; }.actions :focus-visible { outline: 2px solid #cbff25; outline-offset: 3px; }
+.note { color: #b4c8e9; }
+.boundary { position: fixed; z-index: 10000; inset: max(12px, 10vh) max(12px, calc((100vw - 490px)/2)); background: #081331; color: #fff; border: 2px solid #936dff; padding: 20px; overflow: auto; box-shadow: 0 10px 50px #040819b0; }
+.boundary h2 { color: #fff; margin: 0 0 14px; font-size: 20px; }.boundaryClose { float: right; padding: 8px; background: #d5efff; color: #09142f; border: 0; cursor: pointer; }
+.reopen { position: fixed; right: 16px; bottom: 20px; z-index: 10000; padding: 12px; color: #0a1539; background: #d7ff3f; border: 1px solid #9572ff; cursor: pointer; }

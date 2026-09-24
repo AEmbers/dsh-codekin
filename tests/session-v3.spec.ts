@@ -11,6 +11,7 @@ function toolResult(session: Session): SessionEvent<'tool/result'> {
     message: {
       id: 'result-1' as ToolResultMessage['id'],
       role: 'user',
+      isError: true,
       source: { kind: 'tool', callId },
       content: [{ type: 'tool-result', toolCallId: callId,
         content: [{ type: 'text', text: 'Timed out' }], isError: true }],
@@ -33,6 +34,21 @@ function rewriteResult(session: Session, original: SessionEvent<'tool/result'>):
 }
 
 describe('DSH Session V3 reward compatibility', () => {
+  it('recognizes the new message-level error flag without a structured error', () => {
+    const classifier = new TraceWildEventClassifier()
+    const session = Session.create(SessionId('codekin-message-error'))
+    classifier.observe(session, session.append('turn/start', { turn: 1 }))
+    classifier.observe(session, session.append('tool/call', { turn: 1, step: 1, callId, name: 'read', arguments: '{}' }))
+    classifier.observe(session, session.append('tool/result', {
+      turn: 1, step: 1, message: {
+        id: 'message-error' as ToolResultMessage['id'], role: 'user', source: { kind: 'tool', callId }, isError: true,
+        content: [{ type: 'text', text: 'Tool failed' }],
+      },
+    }, { surfaceOp: 'append' }))
+    const result = classifier.observe(session, session.append('turn/end', { turn: 1, reason: { kind: 'completed' } }))
+    // A recovered tool failure on a completed turn follows the existing Aegis rule.
+    expect(result).toMatchObject({ ecology: 'aegis', outcome: 'completed', intensity: 3 })
+  })
   it.each([false, true])('does not count a rewritten tool result as another failure (child activity: %s)', (childActivity: boolean) => {
     const classifier = new TraceWildEventClassifier()
     const root = Session.create(SessionId('codekin-root'))

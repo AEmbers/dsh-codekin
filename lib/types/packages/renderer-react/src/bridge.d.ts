@@ -4,7 +4,8 @@ export declare function notifyTraceWildSettingsChanged(): void;
 export declare function subscribeTraceWildSettingsChanged(listener: () => void): () => void;
 export declare class TraceWildConnectionError extends Error {
     readonly code: 'invalid-action' | 'conflict' | 'unavailable';
-    constructor(code: 'invalid-action' | 'conflict' | 'unavailable');
+    readonly status: number | undefined;
+    constructor(code: 'invalid-action' | 'conflict' | 'unavailable', status?: number | undefined);
 }
 export interface TraceWildConnection {
     loadContent(signal?: AbortSignal): Promise<CodekinContentView>;

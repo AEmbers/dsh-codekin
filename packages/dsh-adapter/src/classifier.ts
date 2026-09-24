@@ -81,7 +81,7 @@ export class TraceWildEventClassifier {
       case 'tool/result': {
         const trace = this.trace(session, event.data.turn)
         const firstBlock = event.data.message.content[0]
-        if (event.data.error !== undefined || firstBlock?.isError === true) trace.failedTools += 1
+        if (event.data.error !== undefined || event.data.message.isError === true || firstBlock?.isError === true) trace.failedTools += 1
         return undefined
       }
       case 'turn/end': {
@@ -148,7 +148,7 @@ export class TraceWildEventClassifier {
     }
     if (event.type === 'tool/result') {
       const firstBlock = event.data.message.content[0]
-      if (event.data.error !== undefined || firstBlock?.isError === true) trace.failedTools += 1
+      if (event.data.error !== undefined || event.data.message.isError === true || firstBlock?.isError === true) trace.failedTools += 1
     }
   }
 

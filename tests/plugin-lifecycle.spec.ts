@@ -153,7 +153,7 @@ describe('installed plugin lifecycle', () => {
     const save = join(root, 'codekinsave', 'state.json')
 
     const first = startPlugin()
-    expect(first.routes).toHaveLength(6)
+    expect(first.routes).toHaveLength(7)
     expect([...first.eventListeners.values()].reduce((sum, listeners) => sum + listeners.size, 0)).toBe(2)
     await post(first, { type: 'choose-starter', creatureId: 'lumen-indeximp' })
     await post(first, { type: 'set-enabled', enabled: false })
@@ -167,7 +167,7 @@ describe('installed plugin lifecycle', () => {
     first.unload()
     expect(stream.ended()).toBe(true)
     expect(first.routes).toHaveLength(0)
-    expect(first.routeDisposals).toHaveBeenCalledTimes(6)
+    expect(first.routeDisposals).toHaveBeenCalledTimes(7)
     expect(first.eventDisposals).toHaveBeenCalledTimes(2)
     const afterUnload = readFileSync(save, 'utf8')
 

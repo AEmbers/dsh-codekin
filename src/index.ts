@@ -4,8 +4,9 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { WebServer } from '@deepseek-ai/dsh-host-webserver'
 import type { Session, SessionEvent, SessionStore } from '@deepseek-ai/dsh-session'
 import { CORE_CODEKIN_RUNTIME, CORE_CONTENT_VIEW } from './core-runtime.ts'
-import { createTraceWildRoutes } from '../packages/dsh-adapter/src/routes.ts'
+import { createCodekinUpdateRoutes, createTraceWildRoutes } from '../packages/dsh-adapter/src/routes.ts'
 import { TraceWildService } from '../packages/dsh-adapter/src/service.ts'
+import { CodekinUpdateChecker, detectCodekinRuntime } from '../packages/dsh-adapter/src/updates.ts'
 
 export * from './core-runtime.ts'
 export { TraceWildService } from '../packages/dsh-adapter/src/service.ts'
@@ -28,7 +29,24 @@ declare module '@deepseek-ai/cordis' {
 }
 
 export function apply(ctx: Context): void {
-  const service = new TraceWildService(ctx, { runtime: CORE_CODEKIN_RUNTIME })
+  const checker = new CodekinUpdateChecker(detectCodekinRuntime())
+  ctx.effect(() => {
+    const updates = createCodekinUpdateRoutes(checker)
+    let unregister: (() => void) | undefined
+    try { unregister = ctx.webServer.register(updates.routes[0]!) }
+    catch (error) { updates.close(); throw error }
+    return () => { updates.close(); unregister?.() }
+  }, 'codekin: version guidance')
+  if (checker.snapshot().compatible === false) {
+    ctx.logger.warn('Codekin is incompatible with this DSH runtime; update guidance remains available.')
+    return
+  }
+  let service: TraceWildService
+  try { service = new TraceWildService(ctx, { runtime: CORE_CODEKIN_RUNTIME }) }
+  catch {
+    ctx.logger.warn('Codekin could not start; update guidance remains available.')
+    return
+  }
   const assetDirectory = fileURLToPath(new URL('../assets/creatures/', import.meta.url))
 
   ctx.effect(() => {

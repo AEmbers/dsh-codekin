@@ -51,6 +51,8 @@ import { PanelDialog, PanelDialogScope, PageControls, usePagination } from './Pa
 import { BattleStage } from './BattleStage.tsx'
 import { SignalFrame, SignalMesh } from './GraphicAccents.tsx'
 import { CodekinSettingsDialog } from './CodekinSettingsDialog.tsx'
+import { CodekinUpdateDialog } from './CodekinUpdateDialog.tsx'
+import { useCodekinUpdates } from './use-codekin-updates.ts'
 import { useUiPreferences } from './use-ui-preferences.ts'
 import { CodekinDetailModal, CodekinView } from './CodekinRosterView.tsx'
 import type { CreatureLook } from '../appearance-presentation.ts'
@@ -410,11 +412,21 @@ export function TraceWildOverlay({ t: hostT }: TraceWildOverlayProps) {
   const { preferences, update: updatePreferences, saved: preferencesSaved } = useUiPreferences()
   const t = useMemo(() => codekinTranslator(hostT, preferences.language), [hostT, preferences.language])
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const updates = useCodekinUpdates()
+  const [updatesOpen, setUpdatesOpen] = useState(false)
+  const [bootFailure, setBootFailure] = useState(false)
+  const bootDialogShown = useRef(false)
   const closeSettings = useCallback(() => { setSettingsOpen(false) }, [])
   const connection = useMemo(() => createTraceWildConnection(), [])
   const [snapshot, setSnapshot] = useState<TraceWildSnapshot>()
   const [online, setOnline] = useState(true)
   const [open, setOpen] = useState(false)
+  useEffect(() => {
+    if ((bootFailure || updates.report?.compatible === false) && !bootDialogShown.current) {
+      bootDialogShown.current = true
+      setOpen(true); setUpdatesOpen(true)
+    }
+  }, [bootFailure, updates.report?.compatible])
   const [tab, setTab] = useState<Tab>(() => preferences.startPage === 'last' ? preferences.lastPage ?? 'lounge' : preferences.startPage ?? 'lounge')
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<string>()
@@ -530,8 +542,12 @@ export function TraceWildOverlay({ t: hostT }: TraceWildOverlayProps) {
       activateCodekinContent(content)
       receiveSnapshot(value, true)
       setOnline(true)
-    } catch {
-      if (signal?.aborted !== true) setOnline(false)
+      setBootFailure(false)
+    } catch (error) {
+      if (signal?.aborted !== true) {
+        setOnline(false)
+        if (latestSnapshot.current === undefined && error instanceof TraceWildConnectionError && error.status !== undefined) setBootFailure(true)
+      }
     }
   }, [receiveSnapshot, connection])
 
@@ -953,6 +969,9 @@ export function TraceWildOverlay({ t: hostT }: TraceWildOverlayProps) {
         {pendingIdleReward !== undefined && state?.enabled !== false && (
           <IdleRewardButton reward={pendingIdleReward} t={t} zh={zh} busy={busy} claim={claimIdleReward} />
         )}
+        {(updates.report?.updateAvailable || updates.report?.compatible === false) && <button type="button" className={css.updateTrigger}
+          aria-haspopup="dialog" aria-expanded={updatesOpen} aria-controls="codekin-updates" onClick={() => { setUpdatesOpen(true) }}>
+          <span aria-hidden="true">●</span>{updates.report.compatible === false ? zh ? '需适配' : 'Compatibility' : zh ? '有更新' : 'Update'}</button>}
         <button type="button" className={css.settingsTrigger} aria-haspopup="dialog" aria-expanded={settingsOpen} aria-controls="codekin-settings"
           onClick={() => { setSettingsOpen(true) }}><span aria-hidden="true">⚙</span>{t('openSettings')}</button>
         <button type="button" className={css.windowClose} onClick={() => { requestNavigation('close') }} title={t('close')} aria-label={t('close')}>
@@ -997,7 +1016,7 @@ export function TraceWildOverlay({ t: hostT }: TraceWildOverlayProps) {
         </header>
 
         {state === undefined
-          ? <div className={css.centerMessage}><span className={css.loadingMark} aria-hidden="true">◌</span><p>{online ? t('loading') : t('disconnected')}</p>{!online && <button type="button" onClick={() => { void refresh() }}>{t('retry')}</button>}</div>
+          ? <div className={css.centerMessage}><span className={css.loadingMark} aria-hidden="true">◌</span><p>{online ? t('loading') : t('disconnected')}</p>{!online && <><button type="button" onClick={() => { void refresh() }}>{t('retry')}</button><button type="button" onClick={() => { setUpdatesOpen(true) }}>{zh ? '版本检查与下载指引' : 'Version check & downloads'}</button></>}</div>
           : !state.enabled ? <div className={css.centerMessage}><p>{t('settingsOffHint')}</p><button type="button" onClick={() => { setSettingsOpen(true) }}>{t('openSettings')}</button></div>
           : (
             <>
@@ -1150,7 +1169,8 @@ export function TraceWildOverlay({ t: hostT }: TraceWildOverlayProps) {
               })()}
             </>
           )}
-        {settingsOpen && <CodekinSettingsDialog t={t} preferences={preferences} saved={preferencesSaved} update={updatePreferences}
+        {updatesOpen && <CodekinUpdateDialog updates={updates} zh={zh} problem={bootFailure || updates.report?.compatible === false} close={() => { setUpdatesOpen(false) }} />}
+        {settingsOpen && <CodekinSettingsDialog updates={updates} t={t} preferences={preferences} saved={preferencesSaved} update={updatePreferences}
           close={closeSettings} resetWindow={resetWindow} resetLauncher={resetLauncher} refresh={refresh}
           enabled={state?.enabled} online={online} busy={busy} inBattle={state?.battle !== undefined}
           setEnabled={async enabled => (await act({ type: 'set-enabled', enabled })) !== undefined} />}

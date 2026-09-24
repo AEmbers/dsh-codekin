@@ -8,6 +8,7 @@ import { normalizeTraceWildAction } from '../../engine/src/protocol.ts'
 import { TraceWildRuleError } from '../../engine/src/engine.ts'
 import type { TraceWildFailureResponse } from '../../engine/src/types.ts'
 import type { TraceWildService } from './service.ts'
+import type { CodekinUpdateChecker } from './updates.ts'
 
 export const TRACEWILD_API_PREFIX = '/api/tracewild'
 const MAX_ACTION_BODY_BYTES = 4 * 1024
@@ -50,6 +51,22 @@ class TraceWildRouteLifecycle {
 export interface TraceWildRouteGroup {
   readonly routes: readonly WebRoute[]
   close(): void
+}
+
+/** Kept independent of the game service so startup failures can still show help. */
+export function createCodekinUpdateRoutes(checker: CodekinUpdateChecker): TraceWildRouteGroup {
+  const lifecycle = new TraceWildRouteLifecycle()
+  return {
+    routes: [{ kind: 'exact', path: `${TRACEWILD_API_PREFIX}/updates`, handler(req, res) {
+      if (rejectUntrusted(req, res)) return
+      if (req.method !== 'GET') { res.writeHead(405, securityHeaders()); res.end(); return }
+      if (lifecycle.signal.aborted) { failure(res, 503, 'unavailable'); return }
+      const manual = new URL(req.url ?? '/', 'http://tracewild.invalid').searchParams.get('refresh') === '1'
+      void checker.check(manual)
+      sendJson(res, 200, checker.snapshot())
+    } }],
+    close() { lifecycle.close(); checker.close() },
+  }
 }
 
 function securityHeaders(): Record<string, string> {

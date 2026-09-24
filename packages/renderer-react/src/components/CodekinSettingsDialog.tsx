@@ -4,10 +4,12 @@ import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import { CODEKIN_PAGES } from '../motion.ts'
 import type { UiPreferences } from '../motion.ts'
 import { PanelDialog } from './PanelDialog.tsx'
+import { CodekinUpdateInfo } from './CodekinUpdateDialog.tsx'
+import type { CodekinUpdates } from './use-codekin-updates.ts'
 import css, { styleText } from './codekin-settings.module.css'
 
 const REPOSITORY = 'https://github.com/Nath-Vikky/dsh-codekin'
-const SECTIONS = ['preferencesInterface', 'preferencesEffects', 'preferencesHelp'] as const
+const SECTIONS = ['preferencesInterface', 'preferencesEffects', 'preferencesUpdates', 'preferencesHelp'] as const
 
 function SettingRow(props: { label: string; hint: string; children: ReactNode }) {
   return <div className={css.row}><div><strong>{props.label}</strong><small>{props.hint}</small></div>{props.children}</div>
@@ -15,6 +17,7 @@ function SettingRow(props: { label: string; hint: string; children: ReactNode })
 
 export function CodekinSettingsDialog(props: {
   t: PropsLocale<'tracewild'>['t']; preferences: UiPreferences; saved: boolean
+  updates: CodekinUpdates
   update: (value: UiPreferences) => void; close: () => void
   resetWindow: () => void; resetLauncher: () => void; refresh: () => Promise<void>
   enabled: boolean | undefined; online: boolean; busy: boolean; inBattle: boolean
@@ -73,6 +76,7 @@ export function CodekinSettingsDialog(props: {
           </SettingRow>
           {failed && <p className={css.error} role="alert">{t('preferencesActionFailed')}</p>}
         </>}
+        {section === 'preferencesUpdates' && <CodekinUpdateInfo updates={props.updates} zh={t('title') === '码灵'} />}
         {section === 'preferencesHelp' && <>
           <div className={css.community}><strong>{t('preferencesGitHub')}</strong><p>{t('preferencesGitHubHint')}</p>
             <a href={REPOSITORY} target="_blank" rel="noopener noreferrer">{t('preferencesRepository')} ↗</a>
@@ -86,7 +90,7 @@ export function CodekinSettingsDialog(props: {
         </>}
       </section>
       <footer className={css.footer}><small role="status">{t(props.saved ? 'preferencesSaved' : 'preferencesNotSaved')}</small>
-        {section !== 'preferencesHelp' && <button type="button" onClick={() => props.update({ language: 'auto', startPage: 'lounge', lockPosition: false, reducedMotion: false, particles: true, encounterBadges: true })}>{t('preferencesDefaults')}</button>}
+        {(section === 'preferencesInterface' || section === 'preferencesEffects') && <button type="button" onClick={() => props.update({ language: 'auto', startPage: 'lounge', lockPosition: false, reducedMotion: false, particles: true, encounterBadges: true })}>{t('preferencesDefaults')}</button>}
       </footer>
     </div>
   </PanelDialog>

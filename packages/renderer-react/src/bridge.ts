@@ -40,7 +40,7 @@ export function subscribeTraceWildSettingsChanged(listener: () => void): () => v
 }
 
 export class TraceWildConnectionError extends Error {
-  constructor(readonly code: 'invalid-action' | 'conflict' | 'unavailable') {
+  constructor(readonly code: 'invalid-action' | 'conflict' | 'unavailable', readonly status: number | undefined = undefined) {
     super(code)
   }
 }
@@ -258,8 +258,9 @@ export function createTraceWildConnection(): TraceWildConnection {
         cache: 'no-store',
         ...(signal === undefined ? {} : { signal }),
       })
-      if (!response.ok) throw new TraceWildConnectionError('unavailable')
-      return parseCodekinContentView(await response.json())
+      if (!response.ok) throw new TraceWildConnectionError('unavailable', response.status)
+      try { return parseCodekinContentView(await response.json()) }
+      catch { throw new TraceWildConnectionError('unavailable', response.status) }
     },
     async load(signal) {
       const response = await fetch(`${API}/state`, {
@@ -268,8 +269,9 @@ export function createTraceWildConnection(): TraceWildConnection {
         cache: 'no-store',
         ...(signal === undefined ? {} : { signal }),
       })
-      if (!response.ok) throw new TraceWildConnectionError('unavailable')
-      return snapshot(await response.json())
+      if (!response.ok) throw new TraceWildConnectionError('unavailable', response.status)
+      try { return snapshot(await response.json()) }
+      catch { throw new TraceWildConnectionError('unavailable', response.status) }
     },
 
     async act(action, signal) {
