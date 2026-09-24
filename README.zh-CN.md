@@ -58,7 +58,7 @@ pnpm dlx @deepseek-ai/dsh@0.1.7-rc.1 plugin --profile web add @nath-vikky/dsh-co
 pnpm dlx @deepseek-ai/dsh@0.1.7-rc.1 plugin --profile web add --ignore-scripts https://github.com/Nath-Vikky/dsh-codekin/releases/download/v0.4.0-rc.1/nath-vikky-dsh-codekin-0.4.0-rc.1.tgz
 ```
 
-执行命令时，请沿用现有 DSH 的 `DSH_HOME`，以更新正确的 Profile。安装后重启 DSH Web，在 **DSH 设置 → 码灵** 中启用。可拖动的入口默认位于左下角，为宿主宠物留出空间，已保存的入口位置仍会保留。点击入口打开竖屏游戏窗口；挂机补给可领取时，入口会变成礼盒提醒。
+执行命令时，请沿用现有 DSH 的 `DSH_HOME`，以更新正确的 Profile。安装后重启 DSH Web，在 **DSH 设置 → 码灵** 中启用。可拖动的入口默认位于左侧、侧边栏底部控制区的上方，为宿主宠物和设置留出空间，已保存的入口位置仍会保留。点击入口打开竖屏游戏窗口；挂机补给可领取时，入口会变成礼盒提醒。
 
 npm `latest` 指向 **`0.4.0-rc.1`**。npm 与 GitHub Release 使用同一份安装包。发布标签与主线均包含经过检查的运行时 Bundle，支持源码安装。使用旧宿主线时，只需将命令中的 DSH 版本改为 `0.1.5-rc.3`，并将 dsh-web 保持在 `0.3.24`。
 
