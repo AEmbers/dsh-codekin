@@ -1,7 +1,8 @@
 .overlay, .overlay *, .launcher { box-sizing: border-box; }
 
 .launcher {
-  pointer-events: auto; position: fixed; right: 22px; bottom: 22px; z-index: 90;
+  /* Leave the host pet's default bottom-right interaction area clear. */
+  pointer-events: auto; position: fixed; left: 22px; bottom: 22px; z-index: 90;
   display: grid; place-items: center;
 }
 .launcherPulse { animation: launcherPulse .55s steps(2, end) 3; }
@@ -182,7 +183,7 @@
 .core_pebble.bigCore, .core_pebble .bigCore { filter: saturate(.4); } .core_pulse.bigCore { filter: hue-rotate(0deg); } .core_prism.bigCore { filter: hue-rotate(70deg); } .core_nova.bigCore { filter: hue-rotate(135deg); } .core_origin.bigCore { filter: hue-rotate(245deg) brightness(1.2); }
 
 @media (max-width: 800px) {
-  .launcher { right: 14px; bottom: 14px; width: 52px; height: 52px; border-radius: 16px; }
+  .launcher { left: 14px; bottom: 14px; width: 52px; height: 52px; border-radius: 16px; }
   .idleClaimFloating { right: 17px; bottom: 76px; }
   .overlay { width: min(454px, calc(100vw - 12px)); height: min(880px, calc(100dvh - 12px)); }
   .headerStats .miniCore:nth-of-type(n+4) { display: none; }

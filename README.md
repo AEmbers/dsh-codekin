@@ -58,7 +58,7 @@ The same release is also available as a GitHub Release tarball:
 pnpm dlx @deepseek-ai/dsh@0.1.7-rc.1 plugin --profile web add --ignore-scripts https://github.com/Nath-Vikky/dsh-codekin/releases/download/v0.4.0-rc.1/nath-vikky-dsh-codekin-0.4.0-rc.1.tgz
 ```
 
-Use the same `DSH_HOME` as your existing DSH installation so the command updates the intended profile. Restart DSH Web, then enable **DSH Settings → Codekin**. The draggable launcher opens the portrait game window and becomes a gift reminder when idle supplies are ready.
+Use the same `DSH_HOME` as your existing DSH installation so the command updates the intended profile. Restart DSH Web, then enable **DSH Settings → Codekin**. The draggable launcher starts at the bottom left to leave room for the host pet, opens the portrait game window, and becomes a gift reminder when idle supplies are ready. Previously saved launcher positions are preserved.
 
 The npm `latest` tag points to **`0.4.0-rc.1`**. npm and GitHub Release use the same package archive. Release tags and the main branch include reviewed runtime bundles for source installs. On the older supported DSH line, replace only the Host version in the command with `0.1.5-rc.3` and keep dsh-web at `0.3.24`.
 
