@@ -15,6 +15,24 @@ dsh-web `0.4.1` requires DSH `>=0.1.7-rc.1`; it does not match the older `latest
 
 Version `0.4.0-rc.1` supports `>=0.1.5-rc.1 <0.1.6-0 || >=0.1.7-rc.1 <0.1.8-0`. This excludes unverified `0.1.6`, `0.1.7-alpha`, and future `0.1.8` prereleases.
 
+## Compatibility declaration from 0.4.1
+
+The open-ended `0.1.5-rc.1 <0.1.6-0 || 0.1.7-rc.1 <0.1.8-0` whitelists above were rejected by the
+DSH `0.2.1-alpha.1` install gate: the gate compares the host version against the declared
+`peerDependencies` ranges, and no branch covered `0.2.0-rc.x` or `0.2.1-alpha.x`.
+
+Codekin `0.4.1` therefore declares:
+
+- `engines.dsh` and `dsh.compatibility.dsh` = `>=0.1.5-rc.1` (one open range instead of a
+  per-version whitelist);
+- `dsh.compatibility.dshReleases` listing every release from `0.1.5-rc.1` through
+  `0.2.1-alpha.1` as `compatible`, so both the `0.2.0-rc.x` line and the `0.2.1-alpha.x` line
+  are declared explicitly;
+- `peerDependencies` DSH entries as `*`.
+
+Verified on 2026-10-04 against both cores: DSH `0.2.1-alpha.1` and DSH `0.2.0-rc.2` each
+installed the package without an `incompatible` rejection and mounted Codekin's client bundle.
+
 ## Updating manually
 
 Codekin checks on startup. A compatible newer release produces an **Update** notice beside **Settings**. Open it, or visit **Settings → Updates**, to inspect the installed Codekin, running DSH, compatible release and download links. The npm link points to the exact selected version. Select the displayed package/version in the DSH plugin manager, then reopen Codekin.

@@ -15,6 +15,22 @@
 
 `0.4.0-rc.1` 兼容范围为 `>=0.1.5-rc.1 <0.1.6-0 || >=0.1.7-rc.1 <0.1.8-0`。不包含 `0.1.7-alpha`、未经验证的 `0.1.6` 或下一条 `0.1.8` 预发布线。
 
+## 0.4.1 起的兼容声明
+
+上面那串 `0.1.5-rc.1 <0.1.6-0 || 0.1.7-rc.1 <0.1.8-0` 逐版本白名单会被 DSH `0.2.1-alpha.1`
+的安装闸门拒绝：闸门拿宿主版本去比对 `peerDependencies` 里声明的区间，而白名单没有任何一支
+覆盖 `0.2.0-rc.x` 或 `0.2.1-alpha.x`。
+
+因此码灵 `0.4.1` 改为：
+
+- `engines.dsh` 与 `dsh.compatibility.dsh` = `>=0.1.5-rc.1`（用一条开区间取代逐版本白名单）；
+- `dsh.compatibility.dshReleases` 从 `0.1.5-rc.1` 一直列到 `0.2.1-alpha.1` 全部标为
+  `compatible`，`0.2.0-rc.x` 线与 `0.2.1-alpha.x` 线都被显式声明；
+- `peerDependencies` 里的 DSH 条目一律写成 `*`。
+
+2026-10-04 已在两代核心上验证：DSH `0.2.1-alpha.1` 与 DSH `0.2.0-rc.2` 都能安装（无
+`incompatible` 拒绝），并且都成功挂载了码灵的客户端 bundle。
+
 来源：[DSH 发布记录](https://github.com/deepseek-ai/deepseek-harness/releases)、[dsh-web 0.4.1 桌面宿主固定版本](https://github.com/zhu1090093659/dsh-web/blob/v0.4.1/desktop/runtime/host/package.json)、两者的 npm 发布元数据。
 
 ## 使用方式
